@@ -1,2 +1,1 @@
-from .world import *
-from .task import *
+from environment import task, world
