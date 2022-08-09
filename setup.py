@@ -1,16 +1,17 @@
 from setuptools import setup, find_packages
+import neurl.version
 
-
-VERSION = "0.0.1"
+version = neurl.version.__version__
 requirements = open("requirements.txt").readlines()
 
 setup(
     name="neurl",
-    version=VERSION,
+    version=version,
     author="Hao Zhu",
     author_email="hao.zhu.10015@gmail.com",
     url="https://github.com/HaoZhu10015/neurl",
     description="Library for reinforcement learning modeling of rodent behavior.",
     packages=find_packages(),
-    install_requires=requirements
+    install_requires=requirements,
+    zip_safe=True
 )

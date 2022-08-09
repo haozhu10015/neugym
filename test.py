@@ -1,5 +1,4 @@
-import environment as env
-
+from neurl import environment as env
 
 if __name__ == '__main__':
     world = env.world.SimpleWorld()
