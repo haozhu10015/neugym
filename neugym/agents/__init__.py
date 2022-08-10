@@ -1,1 +1,1 @@
-from agent import *
+from .single_world_agent import *
