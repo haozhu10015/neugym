@@ -1,4 +1,4 @@
-from neurl import environment as env
+from neugym import environment as env
 
 if __name__ == '__main__':
     world = env.world.SimpleWorld()

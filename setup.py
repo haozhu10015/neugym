@@ -1,11 +1,11 @@
 from setuptools import setup, find_packages
-import neurl.version
+import neugym.version
 
-version = neurl.version.__version__
+version = neugym.version.__version__
 requirements = open("requirements.txt").readlines()
 
 setup(
-    name="neurl",
+    name="neugym",
     version=version,
     author="Hao Zhu",
     author_email="hao.zhu.10015@gmail.com",
