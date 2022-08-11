@@ -24,3 +24,4 @@ if __name__ == '__main__':
             world.update_task(1, success_prob=p_0)
 
         q_rec.append(agent.q.copy())
+    pass

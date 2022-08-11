@@ -55,7 +55,13 @@ class SimpleWorld(World):
         self.time = 0
 
     def info(self):
-        pass
+        print("World Name: SimpleWorld")
+        print("Tasks: {")
+        for i, task in enumerate(self.objects["Tasks"]):
+            info = task.get_info()
+            print("Task {}: {}".format(i, info))
+        print("}")
+        print("Actions: {}".format(self.actions))
 
 
 class GridWorld(World):

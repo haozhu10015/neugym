@@ -5,7 +5,7 @@ class Task:
     def forward(self):
         raise NotImplementedError
 
-    def info(self):
+    def get_info(self):
         raise NotImplementedError
 
 
@@ -38,5 +38,11 @@ class Bandit(Task):
     def reset(self):
         self.current_success_prob = self.init_success_prob
 
-    def info(self):
-        pass
+    def get_info(self):
+        info = {
+            "Name": "Bandit",
+            "Success Reward": self.success_reward,
+            "Fail Reward": self.fail_reward,
+            "Success Probability": self.current_success_prob
+        }
+        return info
