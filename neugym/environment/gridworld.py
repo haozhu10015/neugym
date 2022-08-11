@@ -97,3 +97,6 @@ class GridWorld:
 
         msg = "No object found at {}".format(coord)
         raise ValueError(msg)
+
+    def set_slope(self, area_idx, altitude_mat):
+        pass
