@@ -1,1 +1,1 @@
-from neugym.environment import task, world
+from .gridworld import *
