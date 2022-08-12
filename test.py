@@ -5,10 +5,15 @@ from neugym.environment.gridworld import GridWorld
 class TestGridWorld(unittest.TestCase):
     # Test 'neugym.environment.GridWorld' object.
     def test_init(self):
-        # Test instantiation.
+        # Test default instantiation.
         w = GridWorld()
         self.assertEqual(w.world.number_of_nodes(), 1)
         self.assertTrue((0, 0, 0) in w.world.nodes)
+
+        # Test manually set origin shape.
+        w = GridWorld((3, 3))
+        self.assertEqual(w.world.number_of_nodes(), 9)
+        self.assertEqual(w.world.number_of_edges(), 12)
 
     def test_add_area(self):
         # Test 'add_area' function.
@@ -17,24 +22,36 @@ class TestGridWorld(unittest.TestCase):
         w.add_area((2, 2))
         self.assertEqual(w.num_area, 1)
         self.assertTrue(((0, 0, 0), (1, 0, 0)) in w.world.edges)
+        self.assertEqual(w.alias[(0, 1, 0)], (1, 0, 0))
+        self.assertEqual(w.alias[(1, -1, 0)], (0, 0, 0))
         self.assertEqual(w.world.number_of_nodes(), 5)
         self.assertEqual(w.world.number_of_edges(), 5)
 
         # Test manually specify inter-area connections.
-        w.add_area((2, 3), access_from=(1, 1, 1), access_to=(1, 2))
-        self.assertTrue(((1, 1, 1), (2, 1, 2)) in w.world.edges)
+        with self.assertRaises(ValueError):
+            w.add_area((2, 3), access_from=(1, 1, 1), access_to=(1, 2))
+        self.assertEqual(w.num_area, 1)
 
+        w.add_area((2, 3), access_from=(1, 1, 1), access_to=(1, 0), register_action=(0, 1))
+        self.assertTrue(((1, 1, 1), (2, 1, 0)) in w.world.edges)
+        self.assertEqual(w.alias[(1, 1, 2)], (2, 1, 0))
+        self.assertEqual(w.alias[(2, 1, -1)], (1, 1, 1))
+        self.assertEqual(len(w.alias), 4)
         with self.assertRaises(ValueError):
             w.add_area((3, 3), access_from=(0, 0))
         with self.assertRaises(ValueError):
             w.add_area((3, 3), access_from=(99, 0, 0))
-        with self.assertRaises(ValueError):
-            w.add_area((3, 3), access_from=(1, 2, 2))
 
         with self.assertRaises(ValueError):
             w.add_area((3, 3), access_to=(0, 0, 0))
         with self.assertRaises(ValueError):
             w.add_area((3, 3), access_to=(3, 3))
+        with self.assertRaises(ValueError):
+            w.add_area((3, 3), access_to=(1, 1))
+        with self.assertRaises(ValueError):
+            w.add_area((3, 3), access_from=(2, 1, 2), access_to=(1, 0), register_action=(1, 0))
+        with self.assertRaises(ValueError):
+            w.add_area((3, 3), access_from=(2, 1, 2), access_to=(1, 0), register_action=(3, 3))
 
     def test_remove_area(self):
         # Test 'remove_area' function.
