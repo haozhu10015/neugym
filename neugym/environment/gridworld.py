@@ -1,6 +1,7 @@
 import numpy as np
 import networkx as nx
 import copy
+import warnings
 from ._object import _Object
 
 
@@ -19,13 +20,23 @@ class GridWorld:
                 mapping[key] = tuple([0] + list(key))
             origin = nx.relabel_nodes(origin, mapping)
             self.world.update(origin)
-
-        self.actions = ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
         self.alias = {}
         self.objects = []
+        self.actions = ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
+
+        # Agent information.
+        self.have_agent = False
+        self.time = None
+        self.init_state = None
+        self.current_state = None
 
     def add_area(self, shape, access_from=(0, 0, 0), access_to=(0, 0), register_action=None):
-        new_world = copy.deepcopy(self.world)
+        if len(access_to) != 2:
+            msg = "Tuple of length 2 expected for argument 'access_to', got {}".format(len(access_to))
+            raise ValueError(msg)
+        access_to = tuple([self.num_area + 1] + list(access_to))
+
+        world_backup = copy.deepcopy(self.world)
 
         m, n = shape
         new_area = nx.grid_2d_graph(m, n)
@@ -34,66 +45,55 @@ class GridWorld:
             mapping[key] = tuple([self.num_area + 1] + list(key))
         new_area = nx.relabel_nodes(new_area, mapping)
 
-        new_world.update(new_area)
+        self.world.update(new_area)
 
-        if len(access_from) != 3:
-            msg = "Tuple of length 3 expected for argument 'access_from', got {}".format(len(access_from))
-            raise ValueError(msg)
-        if not new_world.has_node(access_from):
-            msg = "'access_from' coordinate {} out of world".format(access_from)
-            raise ValueError(msg)
-        if new_world.degree(access_from) == 4:
-            msg = "Maximum number of connections (4) for position {} reached, not allowed to access from it".format(
-                access_from)
-            raise ValueError(msg)
-
-        access_to = tuple([self.num_area + 1] + list(access_to))
-        if len(access_to) != 3:
-            msg = "Tuple of length 2 expected for argument 'access_to', got {}".format(len(access_to) - 1)
-            raise ValueError(msg)
-        if not new_world.has_node(access_to):
-            msg = "'access_to' coordinate {} out of world".format(access_to[1:])
-            raise ValueError(msg)
-        elif new_world.degree(access_to) == 4:
-            msg = "Maximum number of connections (4) for position {} reached, not allowed to access to it".format(
-                access_to[1:])
-            raise ValueError(msg)
-
-        free_actions = []
-        for action in self.actions:
-            dx, dy = action
-            to_alias = tuple([access_from[0]] + [access_from[1] + dx] + [access_from[2] + dy])
-            from_alias = tuple([access_to[0]] + [access_to[1] - dx] + [access_to[2] - dy])
-            if new_world.has_node(to_alias) or new_world.has_node(from_alias) or \
-                    to_alias in self.alias.keys() or from_alias in self.alias.keys():
-                continue
-            free_actions.append(action)
-
-        if len(free_actions) == 0:
-            msg = "Unable to connect two areas from 'access_from' {} to 'access_to' {}, " \
-                  "all allowed actions allocated".format(access_from, access_to[1:])
-            raise ValueError(msg)
-
-        if register_action is not None:
-            if register_action not in self.actions:
-                msg = "Illegal 'register_action' {}, expected one of {}".format(register_action, self.actions)
-                raise ValueError(msg)
-            if register_action not in free_actions:
-                msg = "Unable to register action 'register_action' {}, already allocated".format(register_action)
-                raise ValueError(msg)
-            dx, dy = register_action
-        else:
-            dx, dy = free_actions[0]
-
-        self.alias[tuple([access_from[0]] + [access_from[1] + dx] + [access_from[2] + dy])] = access_to
-        self.alias[tuple([access_to[0]] + [access_to[1] - dx] + [access_to[2] - dy])] = access_from
-        new_world.add_edge(access_from, access_to)
-        self.world = new_world
+        try:
+            self.add_path(access_from, access_to, register_action)
+        except ValueError:
+            self.world = world_backup
+            raise
         self.num_area += 1
 
     def remove_area(self, area_idx):
+        new_world = copy.deepcopy(self.world)
         if area_idx == 0:
             raise ValueError("Not allowed to remove origin area")
+
+        # Remove area
+        node_list = list(new_world.nodes)
+        for node in node_list:
+            if node[0] == area_idx:
+                new_world.remove_node(node)
+            elif node[0] > area_idx:
+                new_label = tuple([node[0] - 1] + list(node[1:]))
+                new_world = nx.relabel_nodes(new_world, {node: new_label})
+
+        if not nx.is_connected(new_world):
+            msg = "Not allowed to remove area {}, world is no longer connected".format(area_idx)
+            raise RuntimeError(msg)
+
+        self.world = new_world
+        self.num_area -= 1
+
+        # Remove invalid alias.
+        new_alias = {}
+        for key, value in self.alias.items():
+            if key[0] == area_idx:
+                continue
+            elif key[0] > area_idx:
+                new_key = tuple([key[0] - 1] + list(key[1:]))
+            else:
+                new_key = key
+
+            if value[0] == area_idx:
+                continue
+            elif value[0] > area_idx:
+                new_value = tuple([value[0] - 1] + list(value[1:]))
+            else:
+                new_value = value
+            new_alias[new_key] = new_value
+
+        self.alias = new_alias
 
         # Remove objects in the area to be removed.
         new_objects = []
@@ -107,18 +107,58 @@ class GridWorld:
                 new_objects.append(obj)
         self.objects = new_objects
 
-        # Remove area
-        node_list = list(self.world.nodes)
-        for node in node_list:
-            if node[0] == area_idx:
-                self.world.remove_node(node)
-            elif node[0] > area_idx:
-                new_label = tuple([node[0] - 1] + list(node[1:]))
-                self.world = nx.relabel_nodes(self.world, {node: new_label})
-        self.num_area -= 1
+    def add_path(self, coord_from, coord_to, register_action=None):
+        if len(coord_from) != 3:
+            msg = "Tuple of length 3 expected for argument 'coord_from', got {}".format(len(coord_from))
+            raise ValueError(msg)
+        if not self.world.has_node(coord_from):
+            msg = "'coord_from' coordinate {} out of world".format(coord_from)
+            raise ValueError(msg)
+        if self.world.degree(coord_from) == 4:
+            msg = "Maximum number of connections (4) for position {} reached, not allowed to access from it".format(
+                coord_from)
+            raise ValueError(msg)
 
-    def add_path(self):
-        pass
+        if len(coord_to) != 3:
+            msg = "Tuple of length 3 expected for argument 'coord_to', got {}".format(len(coord_to))
+            raise ValueError(msg)
+        if not self.world.has_node(coord_to):
+            msg = "'coord_to' coordinate {} out of world".format(coord_to)
+            raise ValueError(msg)
+        elif self.world.degree(coord_to) == 4:
+            msg = "Maximum number of connections (4) for position {} reached, not allowed to access to it".format(
+                coord_to)
+            raise ValueError(msg)
+
+        free_actions = []
+        for action in self.actions:
+            dx, dy = action
+            to_alias = tuple([coord_from[0]] + [coord_from[1] + dx] + [coord_from[2] + dy])
+            from_alias = tuple([coord_to[0]] + [coord_to[1] - dx] + [coord_to[2] - dy])
+            if self.world.has_node(to_alias) or self.world.has_node(from_alias) or \
+                    to_alias in self.alias.keys() or from_alias in self.alias.keys():
+                continue
+            free_actions.append(action)
+
+        if len(free_actions) == 0:
+            msg = "Unable to connect two areas from 'coord_from' {} to 'coord_to' {}, " \
+                  "all allowed actions allocated".format(coord_from, coord_to[1:])
+            raise ValueError(msg)
+
+        if register_action is not None:
+            if register_action not in self.actions:
+                msg = "Illegal 'register_action' {}, expected one of {}".format(register_action, self.actions)
+                raise ValueError(msg)
+            if register_action not in free_actions:
+                msg = "Unable to register action 'register_action' {}, already allocated".format(register_action)
+                raise ValueError(msg)
+            dx, dy = register_action
+        else:
+            dx, dy = free_actions[0]
+
+        self.alias[tuple([coord_from[0]] + [coord_from[1] + dx] + [coord_from[2] + dy])] = coord_to
+        self.alias[tuple([coord_to[0]] + [coord_to[1] - dx] + [coord_to[2] - dy])] = coord_from
+        self.world.add_edge(coord_from, coord_to)
 
     def remove_path(self):
         pass
@@ -152,8 +192,8 @@ class GridWorld:
                     if hasattr(obj, key):
                         setattr(obj, key, value)
                     else:
-                        msg = "'Object' object don't have attribute '{}'".format(key)
-                        raise AttributeError(msg)
+                        msg = "'Object' object don't have attribute '{}', ignored.".format(key)
+                        warnings.warn(msg)
                 return
 
         msg = "No object found at {}".format(coord)
@@ -161,3 +201,16 @@ class GridWorld:
 
     def set_slope(self, area_idx, altitude_mat):
         pass
+
+    def init_agent(self):
+        pass
+
+    def step(self):
+        pass
+
+    def reset(self):
+        pass
+
+
+class DelayedRewardGridWord(GridWorld):
+    pass

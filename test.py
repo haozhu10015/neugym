@@ -1,4 +1,5 @@
 import unittest
+import networkx as nx
 from neugym.environment.gridworld import GridWorld
 
 
@@ -31,8 +32,10 @@ class TestGridWorld(unittest.TestCase):
         with self.assertRaises(ValueError):
             w.add_area((2, 3), access_from=(1, 1, 1), access_to=(1, 2))
         self.assertEqual(w.num_area, 1)
+        self.assertEqual(list(w.world.nodes), [(0, 0, 0), (1, 0, 0), (1, 0, 1), (1, 1, 0), (1, 1, 1)])
 
         w.add_area((2, 3), access_from=(1, 1, 1), access_to=(1, 0), register_action=(0, 1))
+        self.assertEqual(w.num_area, 2)
         self.assertTrue(((1, 1, 1), (2, 1, 0)) in w.world.edges)
         self.assertEqual(w.alias[(1, 1, 2)], (2, 1, 0))
         self.assertEqual(w.alias[(2, 1, -1)], (1, 1, 1))
@@ -57,24 +60,34 @@ class TestGridWorld(unittest.TestCase):
         # Test 'remove_area' function.
         w = GridWorld()
         w.add_area((2, 2))
-        w.add_area((3, 3))
+        w.add_area((3, 3), access_from=(1, 1, 1))
         w.add_area((5, 5))
         w.add_object((1, 0, 0), 1, 0.5)
         w.add_object((2, 0, 0), 1, 0.6)
-        w.add_object((3, 0, 0), 1, 0.7)
+        w.add_object((3, 1, 1), 1, 0.7)
         self.assertEqual(w.world.number_of_edges(), 59)
+        self.assertTrue(((1, 1, 1), (2, 0, 0)) in w.world.edges)
+        self.assertEqual(w.alias[(1, 2, 1)], (2, 0, 0))
         self.assertTrue(((0, 0, 0), (3, 0, 0)) in w.world.edges)
 
-        w.remove_area(3)
+        # Test remove "bridge" area.
+        with self.assertRaises(RuntimeError):
+            w.remove_area(1)
+
+        w.remove_area(2)
         self.assertEqual(w.num_area, 2)
-        self.assertEqual(w.world.number_of_nodes(), 14)
-        self.assertEqual(w.world.number_of_edges(), 18)
-        self.assertTrue(((0, 0, 0), (3, 0, 0)) not in w.world.edges)
+        self.assertEqual(w.world.number_of_nodes(), 30)
+        self.assertEqual(w.world.number_of_edges(), 46)
+        self.assertTrue(((1, 1, 1), (2, 0, 0)) not in w.world.edges)
+        self.assertTrue((2, -1, 0) not in w.alias.keys())
+        self.assertEqual(w.alias[(0, 0, 1)], (2, 0, 0))
+        self.assertTrue(w.alias[(2, 0, -1)], (0, 0, 0))
+        self.assertEqual(len(w.alias), 4)
         self.assertEqual(len(w.objects), 2)
         for obj in w.objects:
-            self.assertTrue(obj.coord != (3, 0, 0))
+            self.assertTrue(obj.coord != (2, 0, 0))
 
-        w.add_area((5, 5), access_to=(1, 1))
+        w.add_area((5, 5), access_to=(4, 4))
         w.add_object((3, 1, 1), 1, 0.7)
         w.remove_area(1)
         w.remove_area(1)
@@ -82,14 +95,31 @@ class TestGridWorld(unittest.TestCase):
         self.assertEqual(w.world.number_of_nodes(), 26)
         self.assertEqual(w.world.number_of_edges(), 41)
         self.assertTrue(((0, 0, 0), (1, 0, 0)) not in w.world.edges)
-        self.assertTrue(((0, 0, 0), (1, 1, 1)) in w.world.edges)
+        self.assertTrue(((0, 0, 0), (1, 4, 4)) in w.world.edges)
         self.assertEqual(len(w.objects), 1)
         self.assertEqual((1, 1, 1), w.objects[0].coord)
         self.assertTrue((1, 1, 1) in w.world.nodes)
+        self.assertEqual(len(w.alias), 2)
+        self.assertEqual(w.alias[(0, -1, 0)], (1, 4, 4))
+        self.assertEqual(w.alias[(1, 5, 4)], (0, 0, 0))
 
         # Test remove origin.
         with self.assertRaises(ValueError):
             w.remove_area(0)
+
+    def test_add_path(self):
+        # Test 'add_path' function.
+        w = GridWorld()
+        w.add_area((2, 2))
+        w.add_area((3, 3))
+        w.add_area((2, 2), access_to=(1, 1))
+        with self.assertRaises(ValueError):
+            w.add_path((1, 1, 1), (2, 0))
+        with self.assertRaises(ValueError):
+            w.add_path((1, 1, 1), (2, 2, 0), (-1, 0))
+        w.add_path((1, 1, 1), (2, 2, 0))
+        self.assertEqual(w.alias[(1, 1, 2)], (2, 2, 0))
+        self.assertEqual(w.alias[(2, 2, -1)], (1, 1, 1))
 
     def test_add_object(self):
         # Test 'add_object' function.
@@ -117,7 +147,7 @@ class TestGridWorld(unittest.TestCase):
         w = GridWorld()
         w.add_area((4, 3))
         w.add_area((4, 3))
-        w.add_area((4, 3))
+        w.add_area((4, 3), access_to=(3, 1))
         w.add_object((1, 2, 1), 1, 0.2)
         w.add_object((2, 2, 1), 1, 0.8)
         w.add_object((3, 2, 1), 1, 0.9)
@@ -149,8 +179,8 @@ class TestGridWorld(unittest.TestCase):
             w.update_object((0, 0, 0), reward=1)
 
         # Test modify illegal attribute.
-        with self.assertRaises(AttributeError):
-            w.update_object((1, 2, 1), undefined_attr=10)
+        with self.assertWarns(UserWarning):
+            w.update_object((1, 2, 1), reward=1, prob=0.3, punish=0, undefined_attr=10)
 
 
 if __name__ == '__main__':
