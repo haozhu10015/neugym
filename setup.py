@@ -9,7 +9,7 @@ setup(
     version=version,
     author="Hao Zhu",
     author_email="hao.zhu.10015@gmail.com",
-    url="https://github.com/HaoZhu10015/neurl",
+    url="https://github.com/HaoZhu10015/neugym",
     description="Package for reinforcement learning modeling of rodent behavior.",
     packages=find_packages(),
     install_requires=requirements,
