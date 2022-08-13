@@ -3,9 +3,13 @@ def freeze():
     pass
 
 
-def save():
+def frozen():
     pass
 
 
-def load():
+def save_env():
+    pass
+
+
+def load_env():
     pass
