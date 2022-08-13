@@ -5,7 +5,7 @@ from neugym.environment.gridworld import GridWorld
 
 
 # Test GridWorld environment.
-class TestGridWorld(unittest.TestCase):
+class TestGridWorldFunction(unittest.TestCase):
     def test_init(self):
         # Test default instantiation.
         w = GridWorld()
@@ -298,6 +298,11 @@ class TestGridWorld(unittest.TestCase):
         pass
 
     def test_reset(self):
+        pass
+
+
+class TestGridWorldBuild(unittest.TestCase):
+    def test_build(self):
         pass
 
 
