@@ -1,25 +1,37 @@
-import numpy as np
-import networkx as nx
 import copy
 import warnings
+
+import networkx as nx
+import numpy as np
+
 from ._object import _Object
 
 
 class GridWorld:
-    def __init__(self, origin_shape=(1, 1)):
+    def __init__(self, origin_shape=(1, 1), altitude_mat=None):
+        if altitude_mat is not None:
+            if altitude_mat.shape != origin_shape:
+                msg = "Mismatch shape between origin {} and altitude matrix {}".format(origin_shape, altitude_mat.shape)
+                raise ValueError(msg)
+        else:
+            altitude_mat = np.zeros(origin_shape)
+
         self.world = nx.Graph()
         self.num_area = 0
-        # Add origin
+        # Add origin.
         if origin_shape == (1, 1):
             self.world.add_node((0, 0, 0))
         else:
             m, n = origin_shape
             origin = nx.grid_2d_graph(m, n)
             mapping = {}
-            for key in origin.nodes:
-                mapping[key] = tuple([0] + list(key))
+            for coord in origin.nodes:
+                mapping[coord] = tuple([0] + list(coord))
             origin = nx.relabel_nodes(origin, mapping)
             self.world.update(origin)
+        # Set origin altitude.
+        self.set_altitude(0, altitude_mat)
+
         self.alias = {}
         self.objects = []
         self.actions = ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
@@ -30,7 +42,7 @@ class GridWorld:
         self.init_state = None
         self.current_state = None
 
-    def add_area(self, shape, access_from=(0, 0, 0), access_to=(0, 0), register_action=None):
+    def add_area(self, shape, access_from=(0, 0, 0), access_to=(0, 0), register_action=None, altitude_mat=None):
         if not self.world.has_node(access_from):
             msg = "'access_from' coordinate {} out of world".format(access_from)
             raise ValueError(msg)
@@ -40,23 +52,32 @@ class GridWorld:
             raise ValueError(msg)
         access_to = tuple([self.num_area + 1] + list(access_to))
 
+        if altitude_mat is not None:
+            if altitude_mat.shape != shape:
+                msg = "Mismatch shape between area {} and altitude matrix {}".format(shape, altitude_mat.shape)
+                raise ValueError(msg)
+        else:
+            altitude_mat = np.zeros(shape)
+
         world_backup = copy.deepcopy(self.world)
 
         m, n = shape
         new_area = nx.grid_2d_graph(m, n)
         mapping = {}
-        for key in new_area.nodes:
-            mapping[key] = tuple([self.num_area + 1] + list(key))
+        for coord in new_area.nodes:
+            mapping[coord] = tuple([self.num_area + 1] + list(coord))
         new_area = nx.relabel_nodes(new_area, mapping)
 
         self.world.update(new_area)
+        self.num_area += 1
 
         try:
             self.add_path(access_from, access_to, register_action)
+            self.set_altitude(self.num_area, altitude_mat)
         except ValueError:
             self.world = world_backup
+            self.num_area -= 1
             raise
-        self.num_area += 1
 
     def remove_area(self, area_idx):
         new_world = copy.deepcopy(self.world)
@@ -204,9 +225,6 @@ class GridWorld:
                 self.alias.pop(key)
             self.world.remove_edge(coord_from, coord_to)
 
-    def set_path_attr(self):
-        pass
-
     def add_object(self, coord, reward, prob, punish=0):
         if coord in self.world.nodes:
             self.objects.append(_Object(reward, punish, prob, coord))
@@ -240,8 +258,60 @@ class GridWorld:
         msg = "No object found at {}".format(coord)
         raise ValueError(msg)
 
-    def set_slope(self, area_idx, altitude_mat):
-        pass
+    def set_altitude(self, area_idx, altitude_mat):
+        if area_idx > self.num_area:
+            msg = "Area {} not found".format(area_idx)
+            raise ValueError(msg)
+
+        area_shape = self.get_area_shape(area_idx)
+
+        if altitude_mat.shape != area_shape:
+            msg = "Mismatch shape between Area({}) {} and altitude matrix {}".format(area_idx,
+                                                                                     area_shape,
+                                                                                     altitude_mat.shape)
+            raise ValueError(msg)
+
+        altitude_mapping = {}
+
+        for x in range(area_shape[0]):
+            for y in range(area_shape[1]):
+                coord = (area_idx, x, y)
+                altitude_mapping[coord] = altitude_mat[x, y]
+        nx.set_node_attributes(self.world, altitude_mapping, 'altitude')
+
+    def get_area_shape(self, area_idx):
+        if area_idx > self.num_area:
+            msg = "Area {} not found".format(area_idx)
+            raise ValueError(msg)
+
+        max_x = 0
+        max_y = 0
+        for area, x, y in self.world.nodes:
+            if area != area_idx:
+                continue
+            else:
+                if x > max_x:
+                    max_x = x
+                if y > max_y:
+                    max_y = y
+        return max_x + 1, max_y + 1
+
+    def get_area_altitude(self, area_idx):
+        if area_idx > self.num_area:
+            msg = "Area {} not found".format(area_idx)
+            raise ValueError(msg)
+
+        area_shape = self.get_area_shape(area_idx)
+
+        altitude_mat = np.zeros(area_shape)
+
+        for coord in self.world.nodes:
+            if coord[0] != area_idx:
+                continue
+            else:
+                altitude_mat[coord[1], coord[2]] = nx.get_node_attributes(self.world, 'altitude')[coord]
+
+        return altitude_mat
 
     def init_agent(self):
         pass

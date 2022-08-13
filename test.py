@@ -1,20 +1,31 @@
 import unittest
+import numpy as np
 import networkx as nx
 from neugym.environment.gridworld import GridWorld
 
 
+# Test GridWorld environment.
 class TestGridWorld(unittest.TestCase):
-    # Test 'neugym.environment.GridWorld' object.
     def test_init(self):
         # Test default instantiation.
         w = GridWorld()
+        self.assertEqual(w.get_area_altitude(0).all(), np.zeros((1, 1)).all())
         self.assertEqual(w.world.number_of_nodes(), 1)
         self.assertTrue((0, 0, 0) in w.world.nodes)
 
         # Test manually set origin shape.
         w = GridWorld((3, 3))
+        self.assertEqual(w.get_area_altitude(0).all(), np.zeros((3, 3)).all())
         self.assertEqual(w.world.number_of_nodes(), 9)
         self.assertEqual(w.world.number_of_edges(), 12)
+
+        # Test manually set origin altitude.
+        altitude_mat = np.random.randn(3, 3)
+        w = GridWorld((3, 3), altitude_mat=altitude_mat)
+        self.assertEqual(w.get_area_altitude(0).all(), altitude_mat.all())
+
+        with self.assertRaises(ValueError):
+            GridWorld((3, 3), altitude_mat=np.zeros((3, 4)))
 
     def test_add_area(self):
         # Test 'add_area' function.
@@ -27,6 +38,7 @@ class TestGridWorld(unittest.TestCase):
         self.assertEqual(w.alias.get((1, -1, 0)), (0, 0, 0))
         self.assertEqual(w.world.number_of_nodes(), 5)
         self.assertEqual(w.world.number_of_edges(), 5)
+        self.assertEqual(w.get_area_altitude(1).all(), np.zeros((2, 2)).all())
 
         # Test manually specify inter-area connections.
         with self.assertRaises(ValueError):
@@ -57,6 +69,17 @@ class TestGridWorld(unittest.TestCase):
             w.add_area((3, 3), access_from=(2, 1, 2), access_to=(1, 0), register_action=(1, 0))
         with self.assertRaises(ValueError):
             w.add_area((3, 3), access_from=(2, 1, 2), access_to=(1, 0), register_action=(3, 3))
+
+        # Test add area with altitude.
+        w = GridWorld()
+        altitude_mat = np.random.rand(3, 5)
+        w.add_area((3, 5), altitude_mat=altitude_mat)
+        self.assertEqual(w.get_area_altitude(1).all(), altitude_mat.all())
+        with self.assertRaises(ValueError):
+            w.add_area((3, 3), altitude_mat=np.zeros((2, 2)))
+        self.assertEqual(w.num_area, 1)
+        # Test if all position have attribute 'altitude'.
+        self.assertEqual(len(nx.get_node_attributes(w.world, 'altitude')), 16)
 
     def test_remove_area(self):
         # Test 'remove_area' function.
@@ -217,6 +240,40 @@ class TestGridWorld(unittest.TestCase):
         # Test modify illegal attribute.
         with self.assertWarns(UserWarning):
             w.update_object((1, 2, 1), reward=1, prob=0.3, punish=0, undefined_attr=10)
+
+    def test_set_altitude(self):
+        # Test 'set_altitude' function.
+        w = GridWorld()
+        w.add_area((3, 4))
+        self.assertEqual(w.get_area_altitude(1).all(), np.zeros((3, 4)).all())
+        altitude_mat = np.random.randn(3, 4)
+        w.set_altitude(1, altitude_mat=altitude_mat)
+        self.assertEqual(w.get_area_altitude(1).all(), altitude_mat.all())
+        with self.assertRaises(ValueError):
+            w.set_altitude(2, altitude_mat=altitude_mat)
+        with self.assertRaises(ValueError):
+            w.set_altitude(1, np.zeros((2, 2)))
+
+    def test_get_area_shape(self):
+        # Test 'get_area_shape' function.
+        w = GridWorld()
+        w.add_area((4, 10))
+        w.add_area((4, 3))
+
+        self.assertEqual(w.get_area_shape(0), (1, 1))
+        self.assertEqual(w.get_area_shape(2), (4, 3))
+
+        with self.assertRaises(ValueError):
+            w.get_area_shape(3)
+
+    def test_get_area_altitude(self):
+        # Test 'get_area_altitude' function.
+        w = GridWorld()
+        altitude_mat = np.random.randn(5, 8)
+        w.add_area((5, 8), altitude_mat=altitude_mat)
+        self.assertEqual(w.get_area_altitude(1).all(), altitude_mat.all())
+        with self.assertRaises(ValueError):
+            w.get_area_altitude(2)
 
 
 if __name__ == '__main__':
