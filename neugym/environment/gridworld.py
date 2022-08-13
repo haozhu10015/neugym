@@ -4,20 +4,23 @@ import warnings
 import networkx as nx
 import numpy as np
 
+from ._agent import Agent as _Agent
 from ._object import _Object
 
 
 class GridWorld:
-    def __init__(self, origin_shape=(1, 1), altitude_mat=None):
-        if altitude_mat is not None:
-            if altitude_mat.shape != origin_shape:
-                msg = "Mismatch shape between origin {} and altitude matrix {}".format(origin_shape, altitude_mat.shape)
+    def __init__(self, origin_shape=(1, 1), origin_altitude_mat=None):
+        if origin_altitude_mat is not None:
+            if origin_altitude_mat.shape != origin_shape:
+                msg = "Mismatch shape between origin {} and altitude matrix {}".format(origin_shape,
+                                                                                       origin_altitude_mat.shape)
                 raise ValueError(msg)
         else:
-            altitude_mat = np.zeros(origin_shape)
+            origin_altitude_mat = np.zeros(origin_shape)
 
         self.world = nx.Graph()
         self.num_area = 0
+
         # Add origin.
         if origin_shape == (1, 1):
             self.world.add_node((0, 0, 0))
@@ -30,17 +33,17 @@ class GridWorld:
             origin = nx.relabel_nodes(origin, mapping)
             self.world.update(origin)
         # Set origin altitude.
-        self.set_altitude(0, altitude_mat)
+        self.set_altitude(0, origin_altitude_mat)
 
         self.alias = {}
         self.objects = []
         self.actions = ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
 
-        # Agent information.
-        self.have_agent = False
-        self.time = None
+        # Agent.
+        self.agent = None
+
+        # Reset state.
         self.init_state = None
-        self.current_state = None
 
     def add_area(self, shape, access_from=(0, 0, 0), access_to=(0, 0), register_action=None, altitude_mat=None):
         if not self.world.has_node(access_from):
@@ -313,15 +316,24 @@ class GridWorld:
 
         return altitude_mat
 
-    def init_agent(self):
-        pass
+    def init_agent(self, init_coord=(0, 0, 0)):
+        if self.agent is not None:
+            raise RuntimeError("Agent already exists")
+
+        if not self.world.has_node(init_coord):
+            msg = "Initial state coordinate {} out of world".format(init_coord)
+            raise ValueError(msg)
+
+        self.agent = _Agent(init_coord)
 
     def step(self):
+        pass
+
+    def set_init_state(self):
         pass
 
     def reset(self):
         pass
 
-
-class DelayedRewardGridWord(GridWorld):
-    pass
+    def __repr__(self):
+        pass

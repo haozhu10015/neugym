@@ -21,11 +21,11 @@ class TestGridWorld(unittest.TestCase):
 
         # Test manually set origin altitude.
         altitude_mat = np.random.randn(3, 3)
-        w = GridWorld((3, 3), altitude_mat=altitude_mat)
+        w = GridWorld((3, 3), origin_altitude_mat=altitude_mat)
         self.assertEqual(w.get_area_altitude(0).all(), altitude_mat.all())
 
         with self.assertRaises(ValueError):
-            GridWorld((3, 3), altitude_mat=np.zeros((3, 4)))
+            GridWorld((3, 3), origin_altitude_mat=np.zeros((3, 4)))
 
     def test_add_area(self):
         # Test 'add_area' function.
@@ -274,6 +274,31 @@ class TestGridWorld(unittest.TestCase):
         self.assertEqual(w.get_area_altitude(1).all(), altitude_mat.all())
         with self.assertRaises(ValueError):
             w.get_area_altitude(2)
+
+    def test_init_agent(self):
+        # Test 'add_agent' function.
+        w = GridWorld()
+        with self.assertRaises(ValueError):
+            w.init_agent((2, 2, 2))
+        w.init_agent()
+        self.assertEqual(w.agent._init_state, (0, 0, 0))
+        with self.assertRaises(RuntimeError):
+            w.init_agent()
+
+        # Test initialize agent at other positions.
+        w = GridWorld()
+        w.add_area((2, 2))
+        w.init_agent((1, 1, 0))
+        self.assertEqual(w.agent._init_state, (1, 1, 0))
+
+    def test_step(self):
+        pass
+
+    def test_set_init_state(self):
+        pass
+
+    def test_reset(self):
+        pass
 
 
 if __name__ == '__main__':
