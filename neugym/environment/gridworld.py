@@ -173,12 +173,12 @@ class GridWorld:
         self.world.add_edge(coord_from, coord_to)
 
     def remove_path(self, coord_from, coord_to):
-        if (coord_from, coord_to) in list(nx.bridges(self.world)):
-            msg = "Not allowed to remove path ({}, {}), world would be no longer connected".format(coord_from, coord_to)
-            raise ValueError(msg)
-
         if coord_from[0] == coord_to[0]:
             msg = "Not allowed to remove path within an area"
+            raise ValueError(msg)
+
+        if (coord_from, coord_to) in list(nx.bridges(self.world)):
+            msg = "Not allowed to remove path ({}, {}), world would be no longer connected".format(coord_from, coord_to)
             raise ValueError(msg)
 
         if len(coord_from) != 3 or len(coord_to) != 3:
