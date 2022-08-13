@@ -30,6 +30,8 @@ class TestGridWorld(unittest.TestCase):
 
         # Test manually specify inter-area connections.
         with self.assertRaises(ValueError):
+            w.add_area((2, 3), access_from=(2, 1, 1), access_to=(1, 0), register_action=(0, 1))
+        with self.assertRaises(ValueError):
             w.add_area((2, 3), access_from=(1, 1, 1), access_to=(1, 2))
         self.assertEqual(w.num_area, 1)
         self.assertEqual(list(w.world.nodes), [(0, 0, 0), (1, 0, 0), (1, 0, 1), (1, 1, 0), (1, 1, 1)])
@@ -110,6 +112,11 @@ class TestGridWorld(unittest.TestCase):
     def test_add_path(self):
         # Test 'add_path' function.
         w = GridWorld()
+
+        # Test add self-loop at origin.
+        with self.assertRaises(ValueError):
+            w.add_path((0, 0, 0), (0, 0, 0))
+
         w.add_area((2, 2))
         w.add_area((3, 3))
         w.add_area((2, 2), access_to=(1, 1))
@@ -131,6 +138,8 @@ class TestGridWorld(unittest.TestCase):
         # Test 'remove_path' function.
         w = GridWorld()
         w.add_area((2, 4))
+        with self.assertRaises(ValueError):
+            w.remove_path((0, 0, 0), (1, 0, 0))
         w.add_area((3, 5))
         w.add_path((1, 1, 0), (2, 0, 4))
         with self.assertRaises(ValueError):
@@ -143,6 +152,10 @@ class TestGridWorld(unittest.TestCase):
         w.remove_path((1, 1, 0), (2, 0, 4))
         self.assertEqual(len(w.alias), 4)
         self.assertTrue(((1, 1, 0), (2, 0, 4)) not in w.world.edges)
+
+        # Test remove path within an area.
+        with self.assertRaises(ValueError):
+            w.remove_path((1, 0, 0), (1, 1, 0))
 
     def test_add_object(self):
         # Test 'add_object' function.

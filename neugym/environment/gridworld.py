@@ -31,6 +31,10 @@ class GridWorld:
         self.current_state = None
 
     def add_area(self, shape, access_from=(0, 0, 0), access_to=(0, 0), register_action=None):
+        if not self.world.has_node(access_from):
+            msg = "'access_from' coordinate {} out of world".format(access_from)
+            raise ValueError(msg)
+
         if len(access_to) != 2:
             msg = "Tuple of length 2 expected for argument 'access_to', got {}".format(len(access_to))
             raise ValueError(msg)
@@ -69,7 +73,7 @@ class GridWorld:
                 new_world = nx.relabel_nodes(new_world, {node: new_label})
 
         if not nx.is_connected(new_world):
-            msg = "Not allowed to remove area {}, world is no longer connected".format(area_idx)
+            msg = "Not allowed to remove area {}, world would be no longer connected".format(area_idx)
             raise RuntimeError(msg)
 
         self.world = new_world
@@ -108,6 +112,10 @@ class GridWorld:
         self.objects = new_objects
 
     def add_path(self, coord_from, coord_to, register_action=None):
+        if coord_from[0] == coord_to[0]:
+            msg = "Not allowed to add path within an area"
+            raise ValueError(msg)
+
         if len(coord_from) != 3:
             msg = "Tuple of length 3 expected for argument 'coord_from', got {}".format(len(coord_from))
             raise ValueError(msg)
@@ -165,6 +173,14 @@ class GridWorld:
         self.world.add_edge(coord_from, coord_to)
 
     def remove_path(self, coord_from, coord_to):
+        if (coord_from, coord_to) in list(nx.bridges(self.world)):
+            msg = "Not allowed to remove path ({}, {}), world would be no longer connected".format(coord_from, coord_to)
+            raise ValueError(msg)
+
+        if coord_from[0] == coord_to[0]:
+            msg = "Not allowed to remove path within an area"
+            raise ValueError(msg)
+
         if len(coord_from) != 3 or len(coord_to) != 3:
             msg = "Tuple of length 3 expected for position coordinate"
             raise ValueError(msg)
