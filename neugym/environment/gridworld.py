@@ -130,13 +130,17 @@ class GridWorld:
                 coord_to)
             raise ValueError(msg)
 
+        if (coord_from, coord_to) in self.world.edges:
+            msg = "Path already exists between {} and {}".format(coord_from, coord_to)
+            raise ValueError(msg)
+
         free_actions = []
         for action in self.actions:
             dx, dy = action
-            to_alias = tuple([coord_from[0]] + [coord_from[1] + dx] + [coord_from[2] + dy])
-            from_alias = tuple([coord_to[0]] + [coord_to[1] - dx] + [coord_to[2] - dy])
-            if self.world.has_node(to_alias) or self.world.has_node(from_alias) or \
-                    to_alias in self.alias.keys() or from_alias in self.alias.keys():
+            alias_to = tuple([coord_from[0]] + [coord_from[1] + dx] + [coord_from[2] + dy])
+            alias_from = tuple([coord_to[0]] + [coord_to[1] - dx] + [coord_to[2] - dy])
+            if self.world.has_node(alias_to) or self.world.has_node(alias_from) or \
+                    alias_to in self.alias.keys() or alias_from in self.alias.keys():
                 continue
             free_actions.append(action)
 
@@ -160,8 +164,29 @@ class GridWorld:
         self.alias[tuple([coord_to[0]] + [coord_to[1] - dx] + [coord_to[2] - dy])] = coord_from
         self.world.add_edge(coord_from, coord_to)
 
-    def remove_path(self):
-        pass
+    def remove_path(self, coord_from, coord_to):
+        if len(coord_from) != 3 or len(coord_to) != 3:
+            msg = "Tuple of length 3 expected for position coordinate"
+            raise ValueError(msg)
+
+        remove_list = []
+        for action in self.actions:
+            dx, dy = action
+            alias_to = tuple([coord_from[0]] + [coord_from[1] + dx] + [coord_from[2] + dy])
+            alias_from = tuple([coord_to[0]] + [coord_to[1] - dx] + [coord_to[2] - dy])
+
+            if self.alias.get(alias_to) == coord_to and self.alias.get(alias_from) == coord_from:
+                remove_list.append(alias_to)
+                remove_list.append(alias_from)
+
+        if len(remove_list) == 0:
+            msg = "Inter-area path not found between {} and {}, noting to do".format(coord_from, coord_to)
+            warnings.warn(msg)
+        else:
+            assert len(remove_list) == 2
+            for key in remove_list:
+                self.alias.pop(key)
+            self.world.remove_edge(coord_from, coord_to)
 
     def set_path_attr(self):
         pass

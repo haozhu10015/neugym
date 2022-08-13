@@ -23,8 +23,8 @@ class TestGridWorld(unittest.TestCase):
         w.add_area((2, 2))
         self.assertEqual(w.num_area, 1)
         self.assertTrue(((0, 0, 0), (1, 0, 0)) in w.world.edges)
-        self.assertEqual(w.alias[(0, 1, 0)], (1, 0, 0))
-        self.assertEqual(w.alias[(1, -1, 0)], (0, 0, 0))
+        self.assertEqual(w.alias.get((0, 1, 0)), (1, 0, 0))
+        self.assertEqual(w.alias.get((1, -1, 0)), (0, 0, 0))
         self.assertEqual(w.world.number_of_nodes(), 5)
         self.assertEqual(w.world.number_of_edges(), 5)
 
@@ -37,8 +37,8 @@ class TestGridWorld(unittest.TestCase):
         w.add_area((2, 3), access_from=(1, 1, 1), access_to=(1, 0), register_action=(0, 1))
         self.assertEqual(w.num_area, 2)
         self.assertTrue(((1, 1, 1), (2, 1, 0)) in w.world.edges)
-        self.assertEqual(w.alias[(1, 1, 2)], (2, 1, 0))
-        self.assertEqual(w.alias[(2, 1, -1)], (1, 1, 1))
+        self.assertEqual(w.alias.get((1, 1, 2)), (2, 1, 0))
+        self.assertEqual(w.alias.get((2, 1, -1)), (1, 1, 1))
         self.assertEqual(len(w.alias), 4)
         with self.assertRaises(ValueError):
             w.add_area((3, 3), access_from=(0, 0))
@@ -67,7 +67,7 @@ class TestGridWorld(unittest.TestCase):
         w.add_object((3, 1, 1), 1, 0.7)
         self.assertEqual(w.world.number_of_edges(), 59)
         self.assertTrue(((1, 1, 1), (2, 0, 0)) in w.world.edges)
-        self.assertEqual(w.alias[(1, 2, 1)], (2, 0, 0))
+        self.assertEqual(w.alias.get((1, 2, 1)), (2, 0, 0))
         self.assertTrue(((0, 0, 0), (3, 0, 0)) in w.world.edges)
 
         # Test remove "bridge" area.
@@ -80,8 +80,8 @@ class TestGridWorld(unittest.TestCase):
         self.assertEqual(w.world.number_of_edges(), 46)
         self.assertTrue(((1, 1, 1), (2, 0, 0)) not in w.world.edges)
         self.assertTrue((2, -1, 0) not in w.alias.keys())
-        self.assertEqual(w.alias[(0, 0, 1)], (2, 0, 0))
-        self.assertTrue(w.alias[(2, 0, -1)], (0, 0, 0))
+        self.assertEqual(w.alias.get((0, 0, 1)), (2, 0, 0))
+        self.assertTrue(w.alias.get((2, 0, -1)), (0, 0, 0))
         self.assertEqual(len(w.alias), 4)
         self.assertEqual(len(w.objects), 2)
         for obj in w.objects:
@@ -100,8 +100,8 @@ class TestGridWorld(unittest.TestCase):
         self.assertEqual((1, 1, 1), w.objects[0].coord)
         self.assertTrue((1, 1, 1) in w.world.nodes)
         self.assertEqual(len(w.alias), 2)
-        self.assertEqual(w.alias[(0, -1, 0)], (1, 4, 4))
-        self.assertEqual(w.alias[(1, 5, 4)], (0, 0, 0))
+        self.assertEqual(w.alias.get((0, -1, 0)), (1, 4, 4))
+        self.assertEqual(w.alias.get((1, 5, 4)), (0, 0, 0))
 
         # Test remove origin.
         with self.assertRaises(ValueError):
@@ -118,8 +118,31 @@ class TestGridWorld(unittest.TestCase):
         with self.assertRaises(ValueError):
             w.add_path((1, 1, 1), (2, 2, 0), (-1, 0))
         w.add_path((1, 1, 1), (2, 2, 0))
-        self.assertEqual(w.alias[(1, 1, 2)], (2, 2, 0))
-        self.assertEqual(w.alias[(2, 2, -1)], (1, 1, 1))
+        self.assertEqual(w.alias.get((1, 1, 2)), (2, 2, 0))
+        self.assertEqual(w.alias.get((2, 2, -1)), (1, 1, 1))
+        self.assertTrue(((1, 1, 1), (2, 2, 0)) in w.world.edges)
+
+        # Test add multiple paths between two positions.
+        w.add_path((1, 1, 0), (2, 0, 2))
+        with self.assertRaises(ValueError):
+            w.add_path((1, 1, 0), (2, 0, 2))
+
+    def test_remove_path(self):
+        # Test 'remove_path' function.
+        w = GridWorld()
+        w.add_area((2, 4))
+        w.add_area((3, 5))
+        w.add_path((1, 1, 0), (2, 0, 4))
+        with self.assertRaises(ValueError):
+            w.add_path((1, 1, 0), (2, 0, 4))
+        self.assertEqual(len(w.alias), 6)
+        with self.assertWarns(UserWarning):
+            w.remove_path((1, 1, 3), (0, 0, 0))
+        with self.assertRaises(ValueError):
+            w.remove_path((0, 0), (1, 1, 1))
+        w.remove_path((1, 1, 0), (2, 0, 4))
+        self.assertEqual(len(w.alias), 4)
+        self.assertTrue(((1, 1, 0), (2, 0, 4)) not in w.world.edges)
 
     def test_add_object(self):
         # Test 'add_object' function.
