@@ -302,7 +302,10 @@ class TestGridWorldFunction(unittest.TestCase):
 
 
 class TestGridWorldBuild(unittest.TestCase):
-    def test_build(self):
+    def test_build_simple_task(self):
+        pass
+
+    def test_build_gridworld(self):
         pass
 
 
