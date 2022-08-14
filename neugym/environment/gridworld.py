@@ -385,4 +385,29 @@ class GridWorld:
             setattr(self, key, copy.deepcopy(value))
 
     def __repr__(self):
-        pass
+        msg = "GridWorld(\n" \
+              "\ttime={}\n" \
+              "\torigin=Origin([0])(shape={})\n".format(self.time, self.get_area_shape(0))
+
+        if self.num_area == 0:
+            msg += "\tareas=()\n"
+        else:
+            msg += "\tareas=(\n"
+            for i in range(1, self.num_area + 1):
+                msg += "\t\t[{}] Area(shape={})\n".format(i, self.get_area_shape(i))
+            msg += "\t)\n"
+
+        if len(self.objects) == 0:
+            msg += "\tobjects=()\n"
+        else:
+            msg += "\tobjects=(\n"
+            for i, obj in enumerate(self.objects):
+                msg += "\t\t[{}] {}\n".format(i, str(obj))
+            msg += "\t)\n"
+
+        msg += "\tactions={}\n".format(self.actions)
+        msg += "\tagent={}\n".format(str(self.agent))
+        msg += "\thas_reset_state={}\n".format(self.has_reset_state)
+        msg += ")"
+
+        return msg
