@@ -1,3 +1,7 @@
+"""Base class for gridworld environment.
+
+
+"""
 import copy
 import warnings
 
@@ -8,14 +12,32 @@ import neugym as ng
 from ._agent import _Agent
 from ._object import _Object
 
-
 __all__ = [
     "GridWorld"
 ]
 
 
 class GridWorld:
+    """Base class for gridworld environment.
+
+    Gridworld environment consists of a world, objects, and one agent.
+    The world is separated into multiple rectangle areas and
+    each area is represented by a two-dimensional gird graph.
+    The grid graph has each node connected to its four nearest neighbors.
+
+    Parameters
+    ----------
+    origin_shape :
+    origin_altitude_mat :
+    """
     def __init__(self, origin_shape=(1, 1), origin_altitude_mat=None):
+        """
+        
+        Parameters
+        ----------
+        origin_shape :
+        origin_altitude_mat :
+        """
         if origin_altitude_mat is not None:
             if origin_altitude_mat.shape != origin_shape:
                 msg = "Mismatch shape between origin {} and altitude matrix {}".format(origin_shape,
@@ -385,7 +407,8 @@ class GridWorld:
 
     def reset(self):
         if not self.has_reset_checkpoint:
-            raise ng.NeuGymCheckpointError("Reset state not found, use 'set_reset_state()' to set the reset checkpoint first")
+            raise ng.NeuGymCheckpointError(
+                "Reset state not found, use 'set_reset_state()' to set the reset checkpoint first")
 
         for key, value in self.reset_state.items():
             setattr(self, key, copy.deepcopy(value))
