@@ -4,8 +4,14 @@ import warnings
 import networkx as nx
 import numpy as np
 
+import neugym as ng
 from ._agent import _Agent
 from ._object import _Object
+
+
+__all__ = [
+    "GridWorld"
+]
 
 
 class GridWorld:
@@ -107,7 +113,7 @@ class GridWorld:
 
         if not nx.is_connected(new_world):
             msg = "Not allowed to remove area {}, world would be no longer connected".format(area_idx)
-            raise RuntimeError(msg)
+            raise ng.NeuGymConnectivityError(msg)
 
         self.world = new_world
         self.num_area -= 1
@@ -212,7 +218,7 @@ class GridWorld:
 
         if (coord_from, coord_to) in list(nx.bridges(self.world)):
             msg = "Not allowed to remove path ({}, {}), world would be no longer connected".format(coord_from, coord_to)
-            raise ValueError(msg)
+            raise ng.NeuGymConnectivityError(msg)
 
         if len(coord_from) != 3 or len(coord_to) != 3:
             msg = "Tuple of length 3 expected for position coordinate"
@@ -230,7 +236,7 @@ class GridWorld:
 
         if len(remove_list) == 0:
             msg = "Inter-area path not found between {} and {}, noting to do".format(coord_from, coord_to)
-            warnings.warn(msg)
+            warnings.warn(RuntimeWarning(msg))
         else:
             assert len(remove_list) == 2
             for key in remove_list:
@@ -264,7 +270,7 @@ class GridWorld:
                         setattr(obj, key, value)
                     else:
                         msg = "'Object' object don't have attribute '{}', ignored.".format(key)
-                        warnings.warn(msg)
+                        warnings.warn(RuntimeWarning(msg))
                 return
 
         msg = "No object found at {}".format(coord)
@@ -333,7 +339,7 @@ class GridWorld:
         if self.agent is None or overwrite:
             self.agent = _Agent(init_coord)
         else:
-            raise RuntimeError("Agent already exists, set 'overwrite=True' to overwrite")
+            raise ng.NeuGymOverwriteError("Agent already exists, set 'overwrite=True' to overwrite")
 
     def step(self, action):
         if action not in self.actions:
@@ -375,11 +381,11 @@ class GridWorld:
                 self.reset_state[key] = copy.deepcopy(getattr(self, key))
                 self.has_reset_state = True
         else:
-            raise RuntimeError("Reset state already exists, set 'overwrite=True' to overwrite")
+            raise ng.NeuGymOverwriteError("Reset state already exists, set 'overwrite=True' to overwrite")
 
     def reset(self):
         if not self.has_reset_state:
-            raise RuntimeError("Reset state not found, use 'set_reset_state()' to set the reset state first")
+            raise ng.NeuGymCheckpointError("Reset state not found, use 'set_reset_state()' to set the reset state first")
 
         for key, value in self.reset_state.items():
             setattr(self, key, copy.deepcopy(value))
