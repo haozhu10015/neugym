@@ -50,7 +50,7 @@ class GridWorld:
         self.agent = None
 
         # Reset state.
-        self.has_reset_state = False
+        self.has_reset_checkpoint = False
         self.reset_state = {
             "world": None,
             "time": None,
@@ -92,7 +92,7 @@ class GridWorld:
         try:
             self.add_path(access_from, access_to, register_action)
             self.set_altitude(self.num_area, altitude_mat)
-        except ValueError:
+        except Exception:
             self.world = world_backup
             self.num_area -= 1
             raise
@@ -100,7 +100,7 @@ class GridWorld:
     def remove_area(self, area_idx):
         new_world = copy.deepcopy(self.world)
         if area_idx == 0:
-            raise ValueError("Not allowed to remove origin area")
+            raise ng.NeuGymPermissionError("Not allowed to remove origin area")
 
         # Remove area
         node_list = list(new_world.nodes)
@@ -153,7 +153,7 @@ class GridWorld:
     def add_path(self, coord_from, coord_to, register_action=None):
         if coord_from[0] == coord_to[0]:
             msg = "Not allowed to add path within an area"
-            raise ValueError(msg)
+            raise ng.NeuGymPermissionError(msg)
 
         if len(coord_from) != 3:
             msg = "Tuple of length 3 expected for argument 'coord_from', got {}".format(len(coord_from))
@@ -164,7 +164,7 @@ class GridWorld:
         if self.world.degree(coord_from) == 4:
             msg = "Maximum number of connections (4) for position {} reached, not allowed to access from it".format(
                 coord_from)
-            raise ValueError(msg)
+            raise ng.NeuGymConnectivityError(msg)
 
         if len(coord_to) != 3:
             msg = "Tuple of length 3 expected for argument 'coord_to', got {}".format(len(coord_to))
@@ -175,11 +175,11 @@ class GridWorld:
         elif self.world.degree(coord_to) == 4:
             msg = "Maximum number of connections (4) for position {} reached, not allowed to access to it".format(
                 coord_to)
-            raise ValueError(msg)
+            raise ng.NeuGymConnectivityError(msg)
 
         if (coord_from, coord_to) in self.world.edges:
             msg = "Path already exists between {} and {}".format(coord_from, coord_to)
-            raise ValueError(msg)
+            raise ng.NeuGymOverwriteError(msg)
 
         free_actions = []
         for action in self.actions:
@@ -194,7 +194,7 @@ class GridWorld:
         if len(free_actions) == 0:
             msg = "Unable to connect two areas from 'coord_from' {} to 'coord_to' {}, " \
                   "all allowed actions allocated".format(coord_from, coord_to[1:])
-            raise ValueError(msg)
+            raise ng.NeuGymConnectivityError(msg)
 
         if register_action is not None:
             if register_action not in self.actions:
@@ -202,7 +202,7 @@ class GridWorld:
                 raise ValueError(msg)
             if register_action not in free_actions:
                 msg = "Unable to register action 'register_action' {}, already allocated".format(register_action)
-                raise ValueError(msg)
+                raise ng.NeuGymConnectivityError(msg)
             dx, dy = register_action
         else:
             dx, dy = free_actions[0]
@@ -214,7 +214,7 @@ class GridWorld:
     def remove_path(self, coord_from, coord_to):
         if coord_from[0] == coord_to[0]:
             msg = "Not allowed to remove path within an area"
-            raise ValueError(msg)
+            raise ng.NeuGymPermissionError(msg)
 
         if (coord_from, coord_to) in list(nx.bridges(self.world)):
             msg = "Not allowed to remove path ({}, {}), world would be no longer connected".format(coord_from, coord_to)
@@ -375,17 +375,17 @@ class GridWorld:
 
         return next_state, reward, done
 
-    def set_reset_state(self, overwrite=False):
-        if not self.has_reset_state or overwrite:
+    def set_reset_checkpoint(self, overwrite=False):
+        if not self.has_reset_checkpoint or overwrite:
             for key in self.reset_state.keys():
                 self.reset_state[key] = copy.deepcopy(getattr(self, key))
-                self.has_reset_state = True
+                self.has_reset_checkpoint = True
         else:
             raise ng.NeuGymOverwriteError("Reset state already exists, set 'overwrite=True' to overwrite")
 
     def reset(self):
-        if not self.has_reset_state:
-            raise ng.NeuGymCheckpointError("Reset state not found, use 'set_reset_state()' to set the reset state first")
+        if not self.has_reset_checkpoint:
+            raise ng.NeuGymCheckpointError("Reset state not found, use 'set_reset_state()' to set the reset checkpoint first")
 
         for key, value in self.reset_state.items():
             setattr(self, key, copy.deepcopy(value))
@@ -413,7 +413,7 @@ class GridWorld:
 
         msg += "\tactions={}\n".format(self.actions)
         msg += "\tagent={}\n".format(str(self.agent))
-        msg += "\thas_reset_state={}\n".format(self.has_reset_state)
+        msg += "\thas_reset_state={}\n".format(self.has_reset_checkpoint)
         msg += ")"
 
         return msg

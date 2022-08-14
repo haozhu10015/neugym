@@ -1,11 +1,13 @@
 import unittest
+
 import numpy as np
 import networkx as nx
+import neugym as ng
 from neugym.environment.gridworld import GridWorld
 
 
-# Test GridWorld environment.
 class TestGridWorldFunction(unittest.TestCase):
+    """Test GridWorld environment."""
     def test_init(self):
         # Test default instantiation.
         w = GridWorld()
@@ -43,7 +45,7 @@ class TestGridWorldFunction(unittest.TestCase):
         # Test manually specify inter-area connections.
         with self.assertRaises(ValueError):
             w.add_area((2, 3), access_from=(2, 1, 1), access_to=(1, 0), register_action=(0, 1))
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ng.NeuGymConnectivityError):
             w.add_area((2, 3), access_from=(1, 1, 1), access_to=(1, 2))
         self.assertEqual(w.num_area, 1)
         self.assertEqual(list(w.world.nodes), [(0, 0, 0), (1, 0, 0), (1, 0, 1), (1, 1, 0), (1, 1, 1)])
@@ -63,9 +65,9 @@ class TestGridWorldFunction(unittest.TestCase):
             w.add_area((3, 3), access_to=(0, 0, 0))
         with self.assertRaises(ValueError):
             w.add_area((3, 3), access_to=(3, 3))
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ng.NeuGymConnectivityError):
             w.add_area((3, 3), access_to=(1, 1))
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ng.NeuGymConnectivityError):
             w.add_area((3, 3), access_from=(2, 1, 2), access_to=(1, 0), register_action=(1, 0))
         with self.assertRaises(ValueError):
             w.add_area((3, 3), access_from=(2, 1, 2), access_to=(1, 0), register_action=(3, 3))
@@ -96,7 +98,7 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertTrue(((0, 0, 0), (3, 0, 0)) in w.world.edges)
 
         # Test remove "bridge" area.
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(ng.NeuGymConnectivityError):
             w.remove_area(1)
 
         w.remove_area(2)
@@ -129,7 +131,7 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertEqual(w.alias.get((1, 5, 4)), (0, 0, 0))
 
         # Test remove origin.
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ng.NeuGymPermissionError):
             w.remove_area(0)
 
     def test_add_path(self):
@@ -137,7 +139,7 @@ class TestGridWorldFunction(unittest.TestCase):
         w = GridWorld()
 
         # Test add self-loop at origin.
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ng.NeuGymPermissionError):
             w.add_path((0, 0, 0), (0, 0, 0))
 
         w.add_area((2, 2))
@@ -145,8 +147,10 @@ class TestGridWorldFunction(unittest.TestCase):
         w.add_area((2, 2), access_to=(1, 1))
         with self.assertRaises(ValueError):
             w.add_path((1, 1, 1), (2, 0))
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ng.NeuGymConnectivityError):
             w.add_path((1, 1, 1), (2, 2, 0), (-1, 0))
+        with self.assertRaises(ng.NeuGymConnectivityError):
+            w.add_path((1, 1, 1), (2, 1, 1))
         w.add_path((1, 1, 1), (2, 2, 0))
         self.assertEqual(w.alias.get((1, 1, 2)), (2, 2, 0))
         self.assertEqual(w.alias.get((2, 2, -1)), (1, 1, 1))
@@ -154,21 +158,21 @@ class TestGridWorldFunction(unittest.TestCase):
 
         # Test add multiple paths between two positions.
         w.add_path((1, 1, 0), (2, 0, 2))
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ng.NeuGymOverwriteError):
             w.add_path((1, 1, 0), (2, 0, 2))
 
     def test_remove_path(self):
         # Test 'remove_path' function.
         w = GridWorld()
         w.add_area((2, 4))
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ng.NeuGymConnectivityError):
             w.remove_path((0, 0, 0), (1, 0, 0))
         w.add_area((3, 5))
         w.add_path((1, 1, 0), (2, 0, 4))
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ng.NeuGymOverwriteError):
             w.add_path((1, 1, 0), (2, 0, 4))
         self.assertEqual(len(w.alias), 6)
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(RuntimeWarning):
             w.remove_path((1, 1, 3), (0, 0, 0))
         with self.assertRaises(ValueError):
             w.remove_path((0, 0), (1, 1, 1))
@@ -177,7 +181,7 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertTrue(((1, 1, 0), (2, 0, 4)) not in w.world.edges)
 
         # Test remove path within an area.
-        with self.assertRaises(ValueError):
+        with self.assertRaises(ng.NeuGymPermissionError):
             w.remove_path((1, 0, 0), (1, 1, 0))
 
     def test_add_object(self):
@@ -238,7 +242,7 @@ class TestGridWorldFunction(unittest.TestCase):
             w.update_object((0, 0, 0), reward=1)
 
         # Test modify illegal attribute.
-        with self.assertWarns(UserWarning):
+        with self.assertWarns(RuntimeWarning):
             w.update_object((1, 2, 1), reward=1, prob=0.3, punish=0, undefined_attr=10)
 
     def test_set_altitude(self):
@@ -282,7 +286,7 @@ class TestGridWorldFunction(unittest.TestCase):
             w.init_agent((2, 2, 2))
         w.init_agent()
         self.assertEqual(w.agent.init_state, (0, 0, 0))
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(ng.NeuGymOverwriteError):
             w.init_agent()
 
         # Test initialize agent at other positions.
@@ -338,11 +342,11 @@ class TestGridWorldFunction(unittest.TestCase):
         w.add_object((1, 0, 1), 10, 1)
         w.init_agent((1, 0, 0))
 
-        w.set_reset_state()
+        w.set_reset_checkpoint()
         w.step((0, 1))
-        with self.assertRaises(RuntimeError):
-            w.set_reset_state()
-        w.set_reset_state(overwrite=True)
+        with self.assertRaises(ng.NeuGymOverwriteError):
+            w.set_reset_checkpoint()
+        w.set_reset_checkpoint(overwrite=True)
         self.assertEqual(w.reset_state["time"], 1)
 
     def test_reset(self):
@@ -351,9 +355,9 @@ class TestGridWorldFunction(unittest.TestCase):
         w.add_object((1, 0, 2), 10, 1)
         w.init_agent((1, 0, 0))
 
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(ng.NeuGymCheckpointError):
             w.reset()
-        w.set_reset_state()
+        w.set_reset_checkpoint()
         for _ in range(2):
             w.step((0, 1))
             w.add_path((1, 0, 2), (0, 0, 0), register_action=(0, 1))
