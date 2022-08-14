@@ -281,7 +281,7 @@ class TestGridWorldFunction(unittest.TestCase):
         with self.assertRaises(ValueError):
             w.init_agent((2, 2, 2))
         w.init_agent()
-        self.assertEqual(w.agent._init_state, (0, 0, 0))
+        self.assertEqual(w.agent.init_state, (0, 0, 0))
         with self.assertRaises(RuntimeError):
             w.init_agent()
 
@@ -289,10 +289,45 @@ class TestGridWorldFunction(unittest.TestCase):
         w = GridWorld()
         w.add_area((2, 2))
         w.init_agent((1, 1, 0))
-        self.assertEqual(w.agent._init_state, (1, 1, 0))
+        self.assertEqual(w.agent.init_state, (1, 1, 0))
+        w.init_agent((1, 1, 1), overwrite=True)
+        self.assertEqual(w.agent.init_state, (1, 1, 1))
+        self.assertEqual(w.agent.current_state, (1, 1, 1))
 
     def test_step(self):
-        pass
+        # Test 'step' function.
+        w = GridWorld()
+        w.add_area((1, 2), altitude_mat=np.array([[0.1, 0.2]]))
+        w.add_object((1, 0, 1), 10, 1)
+        w.init_agent()
+
+        with self.assertRaises(ValueError):
+            w.step((1, 1))
+
+        ns, r, d = w.step((0, 0))
+        self.assertEqual(ns, (0, 0, 0))
+        self.assertEqual(r, 0)
+        self.assertEqual(d, False)
+        self.assertEqual(w.agent.current_state, (0, 0, 0))
+
+        ns, r, d = w.step((1, 0))
+        self.assertEqual(ns, (1, 0, 0))
+        self.assertEqual(r, -0.1)
+        self.assertEqual(d, False)
+        self.assertEqual(w.agent.current_state, (1, 0, 0))
+
+        ns, r, d = w.step((-1, 0))
+        self.assertEqual(ns, (0, 0, 0))
+        self.assertEqual(r, 0.1)
+        self.assertEqual(d, False)
+        self.assertEqual(w.agent.current_state, (0, 0, 0))
+
+        w.step((1, 0))
+        ns, r, d = w.step((0, 1))
+        self.assertEqual(ns, (1, 0, 1))
+        self.assertEqual(r, 9.9)
+        self.assertEqual(d, True)
+        self.assertEqual(w.agent.current_state, (0, 0, 0))
 
     def test_set_init_state(self):
         pass
@@ -301,7 +336,7 @@ class TestGridWorldFunction(unittest.TestCase):
         pass
 
 
-class TestGridWorldBuild(unittest.TestCase):
+class TestGridWorldRun(unittest.TestCase):
     def test_build_simple_task(self):
         pass
 

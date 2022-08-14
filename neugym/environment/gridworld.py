@@ -4,7 +4,7 @@ import warnings
 import networkx as nx
 import numpy as np
 
-from ._agent import Agent as _Agent
+from ._agent import _Agent as _Agent
 from ._object import _Object
 
 
@@ -19,6 +19,7 @@ class GridWorld:
             origin_altitude_mat = np.zeros(origin_shape)
 
         self.world = nx.Graph()
+        self.time = 0
         self.num_area = 0
 
         # Add origin.
@@ -316,18 +317,49 @@ class GridWorld:
 
         return altitude_mat
 
-    def init_agent(self, init_coord=(0, 0, 0)):
-        if self.agent is not None:
-            raise RuntimeError("Agent already exists")
-
+    def init_agent(self, init_coord=(0, 0, 0), overwrite=False):
         if not self.world.has_node(init_coord):
             msg = "Initial state coordinate {} out of world".format(init_coord)
             raise ValueError(msg)
 
-        self.agent = _Agent(init_coord)
+        if self.agent is None or overwrite:
+            self.agent = _Agent(init_coord)
+        else:
+            raise RuntimeError("Agent already exists, set 'overwrite=True' to overwrite")
 
-    def step(self):
-        pass
+    def step(self, action):
+        if action not in self.actions:
+            msg = "Illegal action {}, should be one of {}".format(action, self.actions)
+            raise ValueError(msg)
+        else:
+            dx, dy = action
+
+        done = False
+        reward = 0
+        current_state = self.agent.current_state
+        next_state = (current_state[0], current_state[1] + dx, current_state[2] + dy)
+        if not self.world.has_node(next_state):
+            if next_state in self.alias.keys():
+                next_state = self.alias[next_state]
+            else:
+                next_state = current_state
+
+        altitude = nx.get_node_attributes(self.world, 'altitude')
+        reward += altitude[current_state] - altitude[next_state]
+
+        for obj in self.objects:
+            if obj.coord == next_state:
+                reward += obj.get_reward()
+                done = True
+                break
+
+        self.time += 1
+        if done:
+            self.agent.reset()
+        else:
+            self.agent.update(current_state=next_state)
+
+        return next_state, reward, done
 
     def set_init_state(self):
         pass
