@@ -4,7 +4,7 @@ import warnings
 import networkx as nx
 import numpy as np
 
-from ._agent import _Agent as _Agent
+from ._agent import _Agent
 from ._object import _Object
 
 
