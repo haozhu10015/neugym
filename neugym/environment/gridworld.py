@@ -291,9 +291,21 @@ class GridWorld:
                     if hasattr(obj, key):
                         setattr(obj, key, value)
                     else:
-                        msg = "'Object' object don't have attribute '{}', ignored.".format(key)
+                        msg = "'Object' object doesn't have attribute '{}', ignored".format(key)
                         warnings.warn(RuntimeWarning(msg))
                 return
+
+        msg = "No object found at {}".format(coord)
+        raise ValueError(msg)
+
+    def get_object_attribute(self, coord, attr):
+        for obj in self.objects:
+            if coord == obj.coord:
+                if hasattr(obj, attr):
+                    return getattr(obj, attr)
+                else:
+                    msg = "'Object' object doesn't have attribute '{}'".format(attr)
+                    raise ValueError(msg)
 
         msg = "No object found at {}".format(coord)
         raise ValueError(msg)

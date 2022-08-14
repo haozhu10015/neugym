@@ -245,6 +245,18 @@ class TestGridWorldFunction(unittest.TestCase):
         with self.assertWarns(RuntimeWarning):
             w.update_object((1, 2, 1), reward=1, prob=0.3, punish=0, undefined_attr=10)
 
+    def test_get_object_attribute(self):
+        # Test 'get_object_attribute' function.
+        w = GridWorld()
+        w.add_area((2, 2))
+        w.add_object((1, 0, 1), 10, 0.5)
+        self.assertEqual(w.get_object_attribute((1, 0, 1), "reward"), 10)
+        self.assertEqual(w.get_object_attribute((1, 0, 1), "prob"), 0.5)
+        with self.assertRaises(ValueError):
+            w.get_object_attribute((0, 0, 0), "prob")
+        with self.assertRaises(ValueError):
+            w.get_object_attribute((1, 0, 1), "undefined_attr")
+
     def test_set_altitude(self):
         # Test 'set_altitude' function.
         w = GridWorld()
