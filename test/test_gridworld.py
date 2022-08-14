@@ -329,11 +329,43 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertEqual(d, True)
         self.assertEqual(w.agent.current_state, (0, 0, 0))
 
-    def test_set_init_state(self):
-        pass
+        self.assertEqual(w.time, 5)
+
+    def test_set_reset_state(self):
+        # Test 'set_reset_state' function.
+        w = GridWorld()
+        w.add_area((1, 2), altitude_mat=np.array([[0.1, 0.2]]))
+        w.add_object((1, 0, 1), 10, 1)
+        w.init_agent((1, 0, 0))
+
+        w.set_reset_state()
+        w.step((0, 1))
+        with self.assertRaises(RuntimeError):
+            w.set_reset_state()
+        w.set_reset_state(overwrite=True)
+        self.assertEqual(w.reset_state["time"], 1)
 
     def test_reset(self):
-        pass
+        w = GridWorld()
+        w.add_area((1, 3), altitude_mat=np.array([[0.1, 0.2, 0.3]]))
+        w.add_object((1, 0, 2), 10, 1)
+        w.init_agent((1, 0, 0))
+
+        with self.assertRaises(RuntimeError):
+            w.reset()
+        w.set_reset_state()
+        for _ in range(2):
+            w.step((0, 1))
+            w.add_path((1, 0, 2), (0, 0, 0), register_action=(0, 1))
+            w.add_object((0, 0, 0), 1, 0.5)
+            w.init_agent((0, 0, 0), overwrite=True)
+            w.reset()
+            self.assertFalse(w.world.has_edge((1, 0, 2), (0, 0, 0)))
+            self.assertEqual(len(w.alias), 2)
+            self.assertEqual(len(w.objects), 1)
+            self.assertEqual(w.agent.current_state, (1, 0, 0))
+            self.assertEqual(w.agent.init_state, (1, 0, 0))
+            self.assertEqual(w.time, 0)
 
 
 class TestGridWorldRun(unittest.TestCase):

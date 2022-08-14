@@ -44,7 +44,15 @@ class GridWorld:
         self.agent = None
 
         # Reset state.
-        self.init_state = None
+        self.has_reset_state = False
+        self.reset_state = {
+            "world": None,
+            "time": None,
+            "num_area": None,
+            "alias": None,
+            "objects": None,
+            "agent": None
+        }
 
     def add_area(self, shape, access_from=(0, 0, 0), access_to=(0, 0), register_action=None, altitude_mat=None):
         if not self.world.has_node(access_from):
@@ -361,11 +369,20 @@ class GridWorld:
 
         return next_state, reward, done
 
-    def set_init_state(self):
-        pass
+    def set_reset_state(self, overwrite=False):
+        if not self.has_reset_state or overwrite:
+            for key in self.reset_state.keys():
+                self.reset_state[key] = copy.deepcopy(getattr(self, key))
+                self.has_reset_state = True
+        else:
+            raise RuntimeError("Reset state already exists, set 'overwrite=True' to overwrite")
 
     def reset(self):
-        pass
+        if not self.has_reset_state:
+            raise RuntimeError("Reset state not found, use 'set_reset_state()' to set the reset state first")
+
+        for key, value in self.reset_state.items():
+            setattr(self, key, copy.deepcopy(value))
 
     def __repr__(self):
         pass
