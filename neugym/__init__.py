@@ -1,3 +1,3 @@
-from neugym import environment
-from neugym.exception import *
-from neugym.utils import *
+from . import environment
+from .exception import *
+from .utils import *
