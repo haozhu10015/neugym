@@ -87,8 +87,8 @@ Objects
 Agent
 ^^^^^
 
-Adding details
---------------
+Setting world details
+---------------------
 
 More paths
 ^^^^^^^^^^
