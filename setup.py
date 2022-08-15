@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
-import neugym.version
+import neugym as ng
 
-version = neugym.version.__version__
+version = ng.__version__
 requirements = open("requirements.txt").readlines()
 
 setup(
