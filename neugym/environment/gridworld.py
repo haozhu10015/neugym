@@ -31,8 +31,8 @@ class GridWorld:
 
         R_{move} = A_s - A_{s + 1}
 
-    where $R_{move}$ is the movement reward and
-    $A$ represents the altitude of current state $s$ and next state $s + 1$.
+    where :math:`R_{move}` is the movement reward and :math:`A`
+    represents the altitude of current state :math:`s` and next state :math:`s + 1`.
 
     At each position(state), the agent can choose from 5 `actions` to move towards
     UP, DOWN, LEFT, RIGHT, and STAY in the same state.
