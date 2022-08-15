@@ -69,12 +69,48 @@ class GridWorld:
 
     Parameters
     ----------
-    origin_shape :
+    origin_shape : tuple of length 2 (optional, default: (0, 0))
+        Shape of the world origin. If not provided, the origin will be
+        initialized to be only one state (0, 0, 0), otherwise it will
+        be a rectangular area of shape `origin_shape`.
 
-    origin_altitude_mat :
+    origin_altitude_mat : numpy.ndarray (optional, default: None)
+        If not provided, all states of the origin will be set at
+        altitude 0. If provided, it should have the same shape as the
+        origin so each state of the origin will be set according to the
+        corresponding element of the matrix.
+
+    See Also
+    --------
+    DelayedRewardGridWorld
+    TimeLimitedGridWorld
+
 
     Examples
     --------
+
+    Initialize a gridworld environment with only an origin state.
+
+    >>> W = ng.environment.GridWorld()
+
+    W can be grown in several aspects.
+
+    **Areas:**
+
+    Add one area of shape (2, 2).
+
+    >>> W.add_area((2, 2))
+
+    Manually specify start and end state of inter-area path and action to register.
+
+    >>> W.add_area((2, 2),
+    ...            access_from=(0, 0, 0), access_to=(1, 1),
+    ...            register_action=(-1, 0))
+
+    Remove areas.
+
+    >>> W.remove_area(1)
+
 
     """
 

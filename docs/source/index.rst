@@ -11,6 +11,7 @@ Welcome to NeuGym's documentation!
    :caption: Contents:
 
    module
+   tutorial
 
 Indices and tables
 ==================
