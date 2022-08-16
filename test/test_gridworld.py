@@ -21,14 +21,6 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertEqual(w.world.number_of_nodes(), 9)
         self.assertEqual(w.world.number_of_edges(), 12)
 
-        # Test manually set origin altitude.
-        altitude_mat = np.random.randn(3, 3)
-        w = GridWorld((3, 3), origin_altitude_mat=altitude_mat)
-        self.assertEqual(w.get_area_altitude(0).all(), altitude_mat.all())
-
-        with self.assertRaises(ValueError):
-            GridWorld((3, 3), origin_altitude_mat=np.zeros((3, 4)))
-
     def test_add_area(self):
         # Test 'add_area' function.
         # Test default parameters.
@@ -71,17 +63,6 @@ class TestGridWorldFunction(unittest.TestCase):
             w.add_area((3, 3), access_from=(2, 1, 2), access_to=(1, 0), register_action=(1, 0))
         with self.assertRaises(ValueError):
             w.add_area((3, 3), access_from=(2, 1, 2), access_to=(1, 0), register_action=(3, 3))
-
-        # Test add area with altitude.
-        w = GridWorld()
-        altitude_mat = np.random.rand(3, 5)
-        w.add_area((3, 5), altitude_mat=altitude_mat)
-        self.assertEqual(w.get_area_altitude(1).all(), altitude_mat.all())
-        with self.assertRaises(ValueError):
-            w.add_area((3, 3), altitude_mat=np.zeros((2, 2)))
-        self.assertEqual(w.num_area, 1)
-        # Test if all position have attribute 'altitude'.
-        self.assertEqual(len(nx.get_node_attributes(w.world, 'altitude')), 16)
 
     def test_remove_area(self):
         # Test 'remove_area' function.
@@ -286,7 +267,8 @@ class TestGridWorldFunction(unittest.TestCase):
         # Test 'get_area_altitude' function.
         w = GridWorld()
         altitude_mat = np.random.randn(5, 8)
-        w.add_area((5, 8), altitude_mat=altitude_mat)
+        w.add_area((5, 8))
+        w.set_altitude(1, altitude_mat)
         self.assertEqual(w.get_area_altitude(1).all(), altitude_mat.all())
         with self.assertRaises(ValueError):
             w.get_area_altitude(2)
@@ -313,7 +295,8 @@ class TestGridWorldFunction(unittest.TestCase):
     def test_step(self):
         # Test 'step' function.
         w = GridWorld()
-        w.add_area((1, 2), altitude_mat=np.array([[0.1, 0.2]]))
+        w.add_area((1, 2))
+        w.set_altitude(1, altitude_mat=np.array([[0.1, 0.2]]))
         w.add_object((1, 0, 1), 10, 1)
         w.init_agent()
 
@@ -350,7 +333,8 @@ class TestGridWorldFunction(unittest.TestCase):
     def test_set_reset_state(self):
         # Test 'set_reset_state' function.
         w = GridWorld()
-        w.add_area((1, 2), altitude_mat=np.array([[0.1, 0.2]]))
+        w.add_area((1, 2))
+        w.set_altitude(1, altitude_mat=np.array([[0.1, 0.2]]))
         w.add_object((1, 0, 1), 10, 1)
         w.init_agent((1, 0, 0))
 
@@ -363,7 +347,8 @@ class TestGridWorldFunction(unittest.TestCase):
 
     def test_reset(self):
         w = GridWorld()
-        w.add_area((1, 3), altitude_mat=np.array([[0.1, 0.2, 0.3]]))
+        w.add_area((1, 3))
+        w.set_altitude(1, altitude_mat=np.array([[0.1, 0.2, 0.3]]))
         w.add_object((1, 0, 2), 10, 1)
         w.init_agent((1, 0, 0))
 

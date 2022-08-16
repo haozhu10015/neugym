@@ -2,6 +2,7 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath("../.."))
 
+import neugym as ng
 
 # Configuration file for the Sphinx documentation builder.
 #
@@ -15,7 +16,7 @@ sys.path.insert(0, os.path.abspath("../.."))
 project = 'NeuGym'
 copyright = '2022, Hao Zhu'
 author = 'Hao Zhu'
-release = '0.1.0'
+release = ng.__version__
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -43,3 +44,4 @@ add_module_names = False
 
 html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
+html_title = "NeuGym {} Documentation".format(release)

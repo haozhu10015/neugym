@@ -69,38 +69,111 @@ class GridWorld:
 
     Parameters
     ----------
-    origin_shape :
+    origin_shape : tuple[int, int] (optional, default: None)
+        Shape of the world origin. If not provided, the origin will be
+        initialized to be only one state (0, 0, 0), otherwise it will
+        be a rectangular area of shape `origin_shape`.
 
-    origin_altitude_mat :
+    See Also
+    --------
+    DelayedRewardGridWorld
+    TimeLimitedGridWorld
+
 
     Examples
     --------
 
+    Initialize a gridworld environment with only an origin state.
+
+    >>> W = GridWorld()
+
+    W can be grown in several aspects.
+
+    **Areas:**
+
+    Add one area of shape (2, 2).
+
+    >>> W.add_area((2, 2))
+
+    Manually specify start and end state of inter-area path and action to register.
+
+    >>> W.add_area((2, 2),
+    ...            access_from=(0, 0, 0), access_to=(1, 1),
+    ...            register_action=(-1, 0))
+
+    Remove areas.
+
+    >>> W.remove_area(1)
+
+    Set area altitude.
+
+    >>> W.add_area((3, 3))
+    >>> W.set_altitude(1, altitude_mat=np.random.randn(3, 3))
+
+    **Paths:**
+
+    Add additional inter-area paths.
+
+    >>> W = GridWorld()
+    >>> W.add_area((2, 2))
+    >>> W.add_area((2, 2))
+    >>> W.add_path((1, 1, 1), (2, 1, 0), register_action=(0, 1))
+
+    Remove paths.
+
+    >>> W.remove_path((1, 1, 1), (2, 1, 0))
+
+    **Objects:**
+
+    Add objects.
+
+    >>> W = GridWorld()
+    >>> W.add_area((2, 2))
+    >>> W.add_object((0, 0, 0), reward=1, prob=0.7)
+    >>> W.add_object((1, 0, 0), reward=1, prob=0.3, punish=-10)
+
+    Remove objects.
+
+    >>> W.remove_object((1, 0, 0))
+
+    Update object attributes.
+
+    >>> W.update_object((0, 0, 0), reward=10)
+    >>> W.update_object((0, 0, 0), reward=1, prob=0.8)
+
+    **Agent:**
+
+    >>> W.init_agent()
+
+    One can also manually set the agent initial state.
+
+    >>> W.add_area((2, 2))
+    >>> W.init_agent(init_coord=(1, 1, 1))
+
+    When the agent is initialized, the agent can move in the
+    world and get rewards.
+
+    >>> next_state, reward, done = W.step(action=(0, 1))
+
+    **Reset:**
+
+    To reset the environment, first set a reset checkpoint.
+
+    >>> W.set_reset_checkpoint()
+
+    Then the environment can be reset if needed.
+
+    >>> W.reset()
     """
 
-    def __init__(self, origin_shape=(1, 1), origin_altitude_mat=None):
-        """
-        
-        Parameters
-        ----------
-        origin_shape :
-        origin_altitude_mat :
-        """
-        if origin_altitude_mat is not None:
-            if origin_altitude_mat.shape != origin_shape:
-                msg = "Mismatch shape between origin {} " \
-                      "and altitude matrix {}".format(origin_shape,
-                                                      origin_altitude_mat.shape)
-                raise ValueError(msg)
-        else:
-            origin_altitude_mat = np.zeros(origin_shape)
-
+    def __init__(self, origin_shape=None):
         self.world = nx.Graph()
         self.time = 0
         self.num_area = 0
 
         # Add origin.
-        if origin_shape == (1, 1):
+        if origin_shape is None:
+            origin_shape = (1, 1)
             self.world.add_node((0, 0, 0))
         else:
             m, n = origin_shape
@@ -111,6 +184,7 @@ class GridWorld:
             origin = nx.relabel_nodes(origin, mapping)
             self.world.update(origin)
         # Set origin altitude.
+        origin_altitude_mat = np.zeros(origin_shape)
         self.set_altitude(0, origin_altitude_mat)
 
         self.alias = {}
@@ -133,7 +207,7 @@ class GridWorld:
 
     def add_area(self, shape,
                  access_from=(0, 0, 0), access_to=(0, 0),
-                 register_action=None, altitude_mat=None):
+                 register_action=None):
         if not self.world.has_node(access_from):
             msg = "'access_from' coordinate " \
                   "{} out of world".format(access_from)
@@ -144,14 +218,6 @@ class GridWorld:
                   "argument 'access_to', got {}".format(len(access_to))
             raise ValueError(msg)
         access_to = tuple([self.num_area + 1] + list(access_to))
-
-        if altitude_mat is not None:
-            if altitude_mat.shape != shape:
-                msg = "Mismatch shape between area " \
-                      "{} and altitude matrix {}".format(shape, altitude_mat.shape)
-                raise ValueError(msg)
-        else:
-            altitude_mat = np.zeros(shape)
 
         world_backup = copy.deepcopy(self.world)
 
@@ -165,6 +231,7 @@ class GridWorld:
         self.world.update(new_area)
         self.num_area += 1
 
+        altitude_mat = np.zeros(shape)
         try:
             self.add_path(access_from, access_to, register_action)
             self.set_altitude(self.num_area, altitude_mat)
