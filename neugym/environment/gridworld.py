@@ -41,9 +41,9 @@ class GridWorld:
 
     Objects where the agent can get reward are placed at different states
     and each state can only obtain one object. Each object has its own adjustable
-    probability ``prob`` of getting a ``reward`` when the agent reaches
+    probability (``prob``) of getting a ``reward`` when the agent reaches
     the state with this object, if the agent fails to get a reward,
-    it will get a ``punish``.
+    it will get a punishment (``punish``).
 
     .. math::
 
@@ -172,7 +172,7 @@ class GridWorld:
         ----------
         origin_shape : tuple of ints (optional, default: None)
             Shape of the world origin. If not provided, the origin will be
-            initialized to be only one state (0, 0, 0), otherwise it will
+            initialized to be only one state ``(0, 0, 0)``, otherwise it will
             be a rectangular area of shape ``origin_shape``.
 
         Examples
@@ -242,13 +242,13 @@ class GridWorld:
         access_from : tuple of ints (optional, default: None)
             Coordinate of one state in the world that the new area will
             connect to, i.e. the start state of the inter-area path.
-            If not provided, it will be set to (0, 0, 0) by default.
+            If not provided, it will be set to ``(0, 0, 0)`` by default.
 
         access_to : tuple of ints (optional, default: None)
             Coordinate of one state in the new area, i.e. the end state
             of the inter-area path. Tuple of length 2 is required and the
             area index will be automatically added. If not provided, it will be set
-            to (0, 0) by default.
+            to ``(0, 0)`` by default.
 
         register_action : tuple of ints (optional, default: None)
             Register an action to transport the agent from ``access_from`` to
@@ -801,7 +801,7 @@ class GridWorld:
         ----------
         init_coord : tuple of ints (optional, default: None)
             Coordinate of the agent initial state. If not
-            provided, the agent will be initialized at (0, 0, 0)
+            provided, the agent will be initialized at ``(0, 0, 0)``
             by default.
 
         overwrite : bool (optional, default: False)
@@ -862,22 +862,126 @@ class GridWorld:
 
     @property
     def world(self):
+        """A copy of ``world`` attribute of the gridworld environment.
+
+        ``GridWorld.world`` is a NetworkX Graph object which represents
+        here the areas, states and their connections in the gridworld
+        environment. Each node in the graph is a state named by its
+        global coordinate ``(area_idx, x, y)``, and it has an attribute
+        ``altitude`` which represents the altitude of the state.
+        Each edge in the graph denotes the connections between two
+        states (including inter-area connections).
+
+        .. note::
+            More information about NetworkX Graph object can be found at
+            `networkx.Graph \
+            <https://networkx.org/documentation/stable/reference/classes/graph.html>`_
+
+        Returns
+        -------
+        world : netwokx.Graph
+            World attribute of the gridworld environment represented by
+            a NetworkX Graph object.
+
+        Examples
+        --------
+        >>> W = GridWorld()
+        >>> W.add_area((2, 2))
+        >>> G = W.world
+        >>> G.nodes
+        NodeView(((0, 0, 0), (1, 0, 0), (1, 0, 1), (1, 1, 0), (1, 1, 1)))
+
+        References
+        ---------
+        .. [1] NetworkX Documentation: https://networkx.org/
+        """
         return self._world.copy()
 
     @property
     def time(self):
+        """Gridworld environment time.
+
+        ``time`` attribute of gridworld environment represents the
+        number of steps that the agent has moved.
+
+        Returns
+        -------
+        time : int
+            Current time of gridworld environment.
+
+        Examples
+        --------
+        >>> W = GridWorld()
+        >>> W.add_area((2, 3))
+        >>> W.init_agent()
+        >>> W.step((1, 0))
+        >>> W.step((0, 0))
+        >>> W.time
+        2
+        """
         return self._time
 
     @property
     def num_area(self):
+        """Number of areas in the ``world`` of gridworld environment.
+
+        .. note::
+            Origin is not included when counting the number.
+
+        Returns
+        -------
+        num_area : int
+            Number of areas in the world.
+
+        Examples
+        --------
+        >>> W = GridWorld()
+        >>> W.add_area((2, 2))
+        >>> W.add_area((3, 3))
+        >>> W.num_area
+        2
+        """
         return self._num_area
 
     @property
     def actions(self):
+        """Action space of the gridworld environment.
+
+        Each action in the action space is represented
+        with a tuple ``(dx, dy)``.
+
+        Returns
+        -------
+        actions : tuple
+            Action space of the gridworld environment.
+
+        Examples
+        --------
+        >>> W = GridWorld()
+        >>> W.actions
+        ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
+        """
         return self._actions
 
     @property
     def has_reset_checkpoint(self):
+        """Whether there is a reset checkpoint for the gridworld environment.
+
+        Returns
+        -------
+        has_reset_checkpoint : bool
+            Whether a reset checkpoint of the environment has
+            been created.
+
+        Examples
+        --------
+        >>> W = GridWorld()
+        >>> W.has_reset_checkpoint
+        False
+        >>> W.set_reset_checkpoint()
+        >>> W.has_reset_checkpoint
+        True
+        """
         return self._has_reset_checkpoint
 
     def step(self, action):

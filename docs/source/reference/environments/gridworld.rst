@@ -40,7 +40,11 @@ Get environment information
 .. autosummary::
     :toctree: generated/
 
-
+    GridWorld.world
+    GridWorld.time
+    GridWorld.num_area
+    GridWorld.actions
+    GridWorld.has_reset_checkpoint
     GridWorld.get_area_shape
     GridWorld.get_area_altitude
     GridWorld.get_object_attribute
