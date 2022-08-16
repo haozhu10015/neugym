@@ -185,14 +185,14 @@ class GridWorld:
 
         >>> W = GridWorld((3, 4))
         """
-        self.world = nx.Graph()
-        self.time = 0
-        self.num_area = 0
+        self._world = nx.Graph()
+        self._time = 0
+        self._num_area = 0
 
         # Add origin.
         if origin_shape is None:
             origin_shape = (1, 1)
-            self.world.add_node((0, 0, 0))
+            self._world.add_node((0, 0, 0))
         else:
             m, n = origin_shape
             origin = nx.grid_2d_graph(m, n)
@@ -200,24 +200,24 @@ class GridWorld:
             for coord in origin.nodes:
                 mapping[coord] = tuple([0] + list(coord))
             origin = nx.relabel_nodes(origin, mapping)
-            self.world.update(origin)
+            self._world.update(origin)
         origin_altitude_mat = np.zeros(origin_shape)
         self.set_altitude(0, origin_altitude_mat)
 
         self._alias = {}
-        self.objects = []
-        self.actions = ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
+        self._objects = []
+        self._actions = ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
 
         # Agent.
-        self.agent = None
+        self._agent = None
 
         # Reset state.
-        self.has_reset_checkpoint = False
-        self.reset_state = {
+        self._has_reset_checkpoint = False
+        self._reset_state = {
             "world": None,
             "time": None,
             "num_area": None,
-            "_alias": None,
+            "alias": None,
             "objects": None,
             "agent": None
         }
@@ -268,7 +268,7 @@ class GridWorld:
         if access_to is None:
             access_to = (0, 0)
 
-        if not self.world.has_node(access_from):
+        if not self._world.has_node(access_from):
             msg = "'access_from' coordinate " \
                   "{} out of world".format(access_from)
             raise ValueError(msg)
@@ -277,30 +277,30 @@ class GridWorld:
             msg = "Tuple of length 2 expected for " \
                   "argument 'access_to', got {}".format(len(access_to))
             raise ValueError(msg)
-        access_to = tuple([self.num_area + 1] + list(access_to))
+        access_to = tuple([self._num_area + 1] + list(access_to))
 
         # Create checkpoint for rollback.
-        world_backup = copy.deepcopy(self.world)
+        world_backup = copy.deepcopy(self._world)
 
         # Create new area.
         m, n = shape
         new_area = nx.grid_2d_graph(m, n)
         mapping = {}
         for coord in new_area.nodes:
-            mapping[coord] = tuple([self.num_area + 1] + list(coord))
+            mapping[coord] = tuple([self._num_area + 1] + list(coord))
         new_area = nx.relabel_nodes(new_area, mapping)
 
-        self.world.update(new_area)
-        self.num_area += 1
+        self._world.update(new_area)
+        self._num_area += 1
 
         # Add inter-area connections and altitude.
         altitude_mat = np.zeros(shape)
         try:
             self.add_path(access_from, access_to, register_action)
-            self.set_altitude(self.num_area, altitude_mat)
+            self.set_altitude(self._num_area, altitude_mat)
         except Exception:
-            self.world = world_backup
-            self.num_area -= 1
+            self._world = world_backup
+            self._num_area -= 1
             raise
 
     def remove_area(self, area_idx):
@@ -326,7 +326,7 @@ class GridWorld:
         >>> W.add_area((2, 2))
         >>> W.remove_area(1)
         """
-        new_world = copy.deepcopy(self.world)
+        new_world = copy.deepcopy(self._world)
         if area_idx == 0:
             raise ng.NeuGymPermissionError("Not allowed to remove origin area")
 
@@ -344,8 +344,8 @@ class GridWorld:
                   "world would be no longer connected".format(area_idx)
             raise ng.NeuGymConnectivityError(msg)
 
-        self.world = new_world
-        self.num_area -= 1
+        self._world = new_world
+        self._num_area -= 1
 
         # Remove invalid alias.
         new_alias = {}
@@ -369,7 +369,7 @@ class GridWorld:
 
         # Remove objects in the area to be removed.
         new_objects = []
-        for i, obj in enumerate(self.objects):
+        for i, obj in enumerate(self._objects):
             if obj.coord[0] < area_idx:
                 new_objects.append(obj)
             elif obj.coord[0] == area_idx:
@@ -377,7 +377,7 @@ class GridWorld:
             else:
                 obj.coord = tuple([obj.coord[0] - 1] + list(obj.coord[1:]))
                 new_objects.append(obj)
-        self.objects = new_objects
+        self._objects = new_objects
 
     def add_path(self, coord_from, coord_to, register_action=None):
         """Add a new inter-area connection.
@@ -417,10 +417,10 @@ class GridWorld:
             msg = "Tuple of length 3 expected for argument " \
                   "'coord_from', got {}".format(len(coord_from))
             raise ValueError(msg)
-        if not self.world.has_node(coord_from):
+        if not self._world.has_node(coord_from):
             msg = "'coord_from' coordinate {} out of world".format(coord_from)
             raise ValueError(msg)
-        if self.world.degree(coord_from) == 4:
+        if self._world.degree(coord_from) == 4:
             msg = "Maximum number of connections (4) for position " \
                   "{} reached, not allowed to access from it".format(coord_from)
             raise ng.NeuGymConnectivityError(msg)
@@ -429,25 +429,25 @@ class GridWorld:
             msg = "Tuple of length 3 expected for argument " \
                   "'coord_to', got {}".format(len(coord_to))
             raise ValueError(msg)
-        if not self.world.has_node(coord_to):
+        if not self._world.has_node(coord_to):
             msg = "'coord_to' coordinate {} out of world".format(coord_to)
             raise ValueError(msg)
-        elif self.world.degree(coord_to) == 4:
+        elif self._world.degree(coord_to) == 4:
             msg = "Maximum number of connections (4) for position " \
                   "{} reached, not allowed to access to it".format(coord_to)
             raise ng.NeuGymConnectivityError(msg)
 
-        if (coord_from, coord_to) in self.world.edges:
+        if (coord_from, coord_to) in self._world.edges:
             msg = "Path already exists between {} and {}".format(coord_from, coord_to)
             raise ng.NeuGymOverwriteError(msg)
 
         # Search for free actions that can be registered.
         free_actions = []
-        for action in self.actions:
+        for action in self._actions:
             dx, dy = action
             alias_to = tuple([coord_from[0]] + [coord_from[1] + dx] + [coord_from[2] + dy])
             alias_from = tuple([coord_to[0]] + [coord_to[1] - dx] + [coord_to[2] - dy])
-            if self.world.has_node(alias_to) or self.world.has_node(alias_from) or \
+            if self._world.has_node(alias_to) or self._world.has_node(alias_from) or \
                     alias_to in self._alias.keys() or alias_from in self._alias.keys():
                 continue
             free_actions.append(action)
@@ -458,9 +458,9 @@ class GridWorld:
             raise ng.NeuGymConnectivityError(msg)
 
         if register_action is not None:
-            if register_action not in self.actions:
+            if register_action not in self._actions:
                 msg = "Illegal 'register_action' {}, " \
-                      "expected one of {}".format(register_action, self.actions)
+                      "expected one of {}".format(register_action, self._actions)
                 raise ValueError(msg)
             if register_action not in free_actions:
                 msg = "Unable to register action 'register_action' {}, " \
@@ -477,7 +477,7 @@ class GridWorld:
         self._alias[tuple([coord_to[0]] +
                           [coord_to[1] - dx] +
                           [coord_to[2] - dy])] = coord_from
-        self.world.add_edge(coord_from, coord_to)
+        self._world.add_edge(coord_from, coord_to)
 
     def remove_path(self, coord_from, coord_to):
         """Remove one inter-area connection from the world.
@@ -506,7 +506,7 @@ class GridWorld:
             msg = "Not allowed to remove path within an area"
             raise ng.NeuGymPermissionError(msg)
 
-        if (coord_from, coord_to) in list(nx.bridges(self.world)):
+        if (coord_from, coord_to) in list(nx.bridges(self._world)):
             msg = "Not allowed to remove path ({}, {}), " \
                   "world would be no longer connected".format(coord_from, coord_to)
             raise ng.NeuGymConnectivityError(msg)
@@ -517,7 +517,7 @@ class GridWorld:
 
         # Find alias to be removed.
         remove_list = []
-        for action in self.actions:
+        for action in self._actions:
             dx, dy = action
             alias_to = tuple([coord_from[0]] +
                              [coord_from[1] + dx] +
@@ -539,7 +539,7 @@ class GridWorld:
             assert len(remove_list) == 2
             for key in remove_list:
                 self._alias.pop(key)
-            self.world.remove_edge(coord_from, coord_to)
+            self._world.remove_edge(coord_from, coord_to)
 
     def add_object(self, coord, reward, prob, punish=0):
         """Add one object to the world.
@@ -568,8 +568,8 @@ class GridWorld:
         >>> W.add_object((0, 0, 0), reward=1, prob=0.7)
         >>> W.add_object((1, 0, 0), reward=1, prob=0.3, punish=-10)
         """
-        if coord in self.world.nodes:
-            self.objects.append(_Object(reward, punish, prob, coord))
+        if coord in self._world.nodes:
+            self._objects.append(_Object(reward, punish, prob, coord))
         else:
             msg = "Coordinate {} out of world".format(coord)
             raise ValueError(msg)
@@ -590,12 +590,12 @@ class GridWorld:
         >>> W.remove_object((0, 0, 0))
         """
         pop_idx = None
-        for i, obj in enumerate(self.objects):
+        for i, obj in enumerate(self._objects):
             if coord == obj.coord:
                 pop_idx = i
                 break
         if pop_idx is not None:
-            self.objects.pop(pop_idx)
+            self._objects.pop(pop_idx)
         else:
             msg = "No object found at {}".format(coord)
             raise ValueError(msg)
@@ -624,7 +624,7 @@ class GridWorld:
         >>> W.add_object((0, 0, 0), reward=1, prob=0.7)
         >>> W.update_object((0, 0, 0), reward=10, prob=0.8, punish=-1)
         """
-        for obj in self.objects:
+        for obj in self._objects:
             if coord == obj.coord:
                 for key, value in attr.items():
                     if hasattr(obj, key):
@@ -663,7 +663,7 @@ class GridWorld:
         >>> W.get_object_attribute((0, 0, 0), 'prob')
         0.7
         """
-        for obj in self.objects:
+        for obj in self._objects:
             if coord == obj.coord:
                 if hasattr(obj, attr):
                     return getattr(obj, attr)
@@ -694,7 +694,7 @@ class GridWorld:
         >>> mat = np.random.randn(2, 3)
         >>> W.set_altitude(1, altitude_mat=mat)
         """
-        if area_idx > self.num_area:
+        if area_idx > self._num_area:
             msg = "Area {} not found".format(area_idx)
             raise ValueError(msg)
 
@@ -713,7 +713,7 @@ class GridWorld:
             for y in range(area_shape[1]):
                 coord = (area_idx, x, y)
                 altitude_mapping[coord] = altitude_mat[x, y]
-        nx.set_node_attributes(self.world, altitude_mapping, 'altitude')
+        nx.set_node_attributes(self._world, altitude_mapping, 'altitude')
 
     def get_area_shape(self, area_idx):
         """Get the shape of one area.
@@ -735,13 +735,13 @@ class GridWorld:
         >>> W.get_area_shape(1)
         (3, 10)
         """
-        if area_idx > self.num_area:
+        if area_idx > self._num_area:
             msg = "Area {} not found".format(area_idx)
             raise ValueError(msg)
 
         max_x = 0
         max_y = 0
-        for area, x, y in self.world.nodes:
+        for area, x, y in self._world.nodes:
             if area != area_idx:
                 continue
             else:
@@ -777,7 +777,7 @@ class GridWorld:
                [1., 1., 1., 1., 1.],
                [1., 1., 1., 1., 1.]])
         """
-        if area_idx > self.num_area:
+        if area_idx > self._num_area:
             msg = "Area {} not found".format(area_idx)
             raise ValueError(msg)
 
@@ -785,12 +785,12 @@ class GridWorld:
 
         altitude_mat = np.zeros(area_shape)
 
-        for coord in self.world.nodes:
+        for coord in self._world.nodes:
             if coord[0] != area_idx:
                 continue
             else:
                 altitude_mat[coord[1], coord[2]] = \
-                    nx.get_node_attributes(self.world, 'altitude')[coord]
+                    nx.get_node_attributes(self._world, 'altitude')[coord]
 
         return altitude_mat
 
@@ -817,23 +817,28 @@ class GridWorld:
         if init_coord is None:
             init_coord = (0, 0, 0)
 
-        if not self.world.has_node(init_coord):
+        if not self._world.has_node(init_coord):
             msg = "Initial state coordinate {} out of world".format(init_coord)
             raise ValueError(msg)
 
-        if self.agent is None or overwrite:
-            self.agent = _Agent(init_coord)
+        if self._agent is None or overwrite:
+            self._agent = _Agent(init_coord)
         else:
             raise ng.NeuGymOverwriteError("Agent already exists, "
                                           "set 'overwrite=True' to overwrite")
 
-    def get_agent_state(self):
-        """Get current state of the agent.
+    def get_agent_state(self, when="current"):
+        """Get state of the agent.
+
+        Parameters
+        ----------
+        when : str {"current", "init"} (optional, default: "current")
+            Choose to get the initial ("init") or current ("current") state of the agent.
 
         Returns
         -------
         agent_current_state : tuple of ints
-            Coordinate of the state where the agent stays currently.
+            Coordinate of the state where the agent stays.
 
         Examples
         --------
@@ -844,8 +849,36 @@ class GridWorld:
         ((1, 0, 0), 0.0, False)
         >>> W.get_agent_state()
         (1, 0, 0)
+        >>> W.get_agent_state(when="init")
+        (0, 0, 0)
         """
-        return self.agent.current_state
+        if when == "current":
+            return self._agent.current_state
+        elif when == "init":
+            return self._agent.init_state
+        else:
+            msg = "Unrecognized parameter '{}', 'current' or 'init' expected".format(when)
+            raise ValueError(msg)
+
+    @property
+    def world(self):
+        return self._world.copy()
+
+    @property
+    def time(self):
+        return self._time
+
+    @property
+    def num_area(self):
+        return self._num_area
+
+    @property
+    def actions(self):
+        return self._actions
+
+    @property
+    def has_reset_checkpoint(self):
+        return self._has_reset_checkpoint
 
     def step(self, action):
         """Make the agent move toward direction given by ``action``.
@@ -882,36 +915,36 @@ class GridWorld:
         >>> W.step((1, 0))
         ((1, 0, 0), 0.0, False)
         """
-        if action not in self.actions:
-            msg = "Illegal action {}, should be one of {}".format(action, self.actions)
+        if action not in self._actions:
+            msg = "Illegal action {}, should be one of {}".format(action, self._actions)
             raise ValueError(msg)
         else:
             dx, dy = action
 
         done = False
         reward = 0
-        current_state = self.agent.current_state
+        current_state = self._agent.current_state
         next_state = (current_state[0], current_state[1] + dx, current_state[2] + dy)
-        if not self.world.has_node(next_state):
+        if not self._world.has_node(next_state):
             if next_state in self._alias.keys():
                 next_state = self._alias[next_state]
             else:
                 next_state = current_state
 
-        altitude = nx.get_node_attributes(self.world, 'altitude')
+        altitude = nx.get_node_attributes(self._world, 'altitude')
         reward += altitude[current_state] - altitude[next_state]
 
-        for obj in self.objects:
+        for obj in self._objects:
             if obj.coord == next_state:
                 reward += obj.get_reward()
                 done = True
                 break
 
-        self.time += 1
+        self._time += 1
         if done:
-            self.agent.reset()
+            self._agent.reset()
         else:
-            self.agent.update(current_state=next_state)
+            self._agent.update(current_state=next_state)
 
         return next_state, reward, done
 
@@ -932,10 +965,10 @@ class GridWorld:
         >>> W.has_reset_checkpoint
         True
         """
-        if not self.has_reset_checkpoint or overwrite:
-            for key in self.reset_state.keys():
-                self.reset_state[key] = copy.deepcopy(getattr(self, key))
-                self.has_reset_checkpoint = True
+        if not self._has_reset_checkpoint or overwrite:
+            for key in self._reset_state.keys():
+                self._reset_state[key] = copy.deepcopy(getattr(self, '_' + key))
+                self._has_reset_checkpoint = True
         else:
             raise ng.NeuGymOverwriteError("Reset state already exists, "
                                           "set 'overwrite=True' to overwrite")
@@ -954,46 +987,46 @@ class GridWorld:
         ((1, 0, 0), 0.0, False)
         >>> W.reset()
         """
-        if not self.has_reset_checkpoint:
+        if not self._has_reset_checkpoint:
             raise ng.NeuGymCheckpointError(
                 "Reset state not found, use 'set_reset_state()' "
                 "to set the reset checkpoint first")
 
-        for key, value in self.reset_state.items():
-            setattr(self, key, copy.deepcopy(value))
+        for key, value in self._reset_state.items():
+            setattr(self, '_' + key, copy.deepcopy(value))
 
     def __repr__(self):
         msg = "GridWorld(\n" \
               "\ttime={},\n" \
-              "\torigin=Origin([0])(shape={}),\n".format(self.time, self.get_area_shape(0))
+              "\torigin=Origin([0])(shape={}),\n".format(self._time, self.get_area_shape(0))
 
-        if self.num_area == 0:
+        if self._num_area == 0:
             msg += "\tareas=(),\n"
         else:
             msg += "\tareas=(\n"
-            for i in range(1, self.num_area + 1):
+            for i in range(1, self._num_area + 1):
                 msg += "\t\t[{}] Area(shape={})".format(i, self.get_area_shape(i))
-                if i != self.num_area:
+                if i != self._num_area:
                     msg += ",\n"
                 else:
                     msg += "\n"
             msg += "\t),\n"
 
-        if len(self.objects) == 0:
+        if len(self._objects) == 0:
             msg += "\tobjects=(),\n"
         else:
             msg += "\tobjects=(\n"
-            for i, obj in enumerate(self.objects):
+            for i, obj in enumerate(self._objects):
                 msg += "\t\t[{}] {}".format(i, str(obj))
-                if i != len(self.objects) - 1:
+                if i != len(self._objects) - 1:
                     msg += ",\n"
                 else:
                     msg += "\n"
             msg += "\t),\n"
 
-        msg += "\tactions={},\n".format(self.actions)
-        msg += "\tagent={},\n".format(str(self.agent))
-        msg += "\thas_reset_state={},\n".format(self.has_reset_checkpoint)
+        msg += "\tactions={},\n".format(self._actions)
+        msg += "\tagent={},\n".format(str(self._agent))
+        msg += "\thas_reset_state={},\n".format(self._has_reset_checkpoint)
         msg += ")"
 
         return msg

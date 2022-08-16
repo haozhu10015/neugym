@@ -90,8 +90,8 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertEqual(w._alias.get((0, 0, 1)), (2, 0, 0))
         self.assertTrue(w._alias.get((2, 0, -1)), (0, 0, 0))
         self.assertEqual(len(w._alias), 4)
-        self.assertEqual(len(w.objects), 2)
-        for obj in w.objects:
+        self.assertEqual(len(w._objects), 2)
+        for obj in w._objects:
             self.assertTrue(obj.coord != (2, 0, 0))
 
         w.add_area((5, 5), access_to=(4, 4))
@@ -103,8 +103,8 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertEqual(w.world.number_of_edges(), 41)
         self.assertTrue(((0, 0, 0), (1, 0, 0)) not in w.world.edges)
         self.assertTrue(((0, 0, 0), (1, 4, 4)) in w.world.edges)
-        self.assertEqual(len(w.objects), 1)
-        self.assertEqual((1, 1, 1), w.objects[0].coord)
+        self.assertEqual(len(w._objects), 1)
+        self.assertEqual((1, 1, 1), w._objects[0].coord)
         self.assertTrue((1, 1, 1) in w.world.nodes)
         self.assertEqual(len(w._alias), 2)
         self.assertEqual(w._alias.get((0, -1, 0)), (1, 4, 4))
@@ -172,12 +172,12 @@ class TestGridWorldFunction(unittest.TestCase):
 
         w.add_object((1, 1, 1), 1, 0.3)
         w.add_object((2, 2, 1), 1, 0.7, -1)
-        self.assertEqual(len(w.objects), 2)
-        self.assertEqual(w.objects[0].reward, 1)
-        self.assertEqual(w.objects[0].prob, 0.3)
-        self.assertEqual(w.objects[0].punish, 0)
-        self.assertEqual(w.objects[0].coord, (1, 1, 1))
-        self.assertEqual(w.objects[1].punish, -1)
+        self.assertEqual(len(w._objects), 2)
+        self.assertEqual(w._objects[0].reward, 1)
+        self.assertEqual(w._objects[0].prob, 0.3)
+        self.assertEqual(w._objects[0].punish, 0)
+        self.assertEqual(w._objects[0].coord, (1, 1, 1))
+        self.assertEqual(w._objects[1].punish, -1)
 
         # Test add object with illegal coordinate.
         with self.assertRaises(ValueError):
@@ -196,8 +196,8 @@ class TestGridWorldFunction(unittest.TestCase):
         w.add_object((3, 2, 1), 1, 0.9)
 
         w.remove_object((3, 2, 1))
-        self.assertEqual(len(w.objects), 2)
-        for obj in w.objects:
+        self.assertEqual(len(w._objects), 2)
+        for obj in w._objects:
             self.assertTrue(obj.coord != (3, 2, 1))
 
         # Test remove undefined object.
@@ -213,9 +213,9 @@ class TestGridWorldFunction(unittest.TestCase):
         w.add_object((2, 2, 1), 1, 0.7)
 
         w.update_object((1, 2, 1), reward=10, prob=0.2, punish=-10)
-        self.assertEqual(w.objects[0].reward, 10)
-        self.assertEqual(w.objects[0].prob, 0.2)
-        self.assertEqual(w.objects[0].punish, -10)
+        self.assertEqual(w._objects[0].reward, 10)
+        self.assertEqual(w._objects[0].prob, 0.2)
+        self.assertEqual(w._objects[0].punish, -10)
 
         # Test modify undefined object.
         with self.assertRaises(ValueError):
@@ -278,7 +278,7 @@ class TestGridWorldFunction(unittest.TestCase):
         with self.assertRaises(ValueError):
             w.init_agent((2, 2, 2))
         w.init_agent()
-        self.assertEqual(w.agent.init_state, (0, 0, 0))
+        self.assertEqual(w.get_agent_state("init"), (0, 0, 0))
         with self.assertRaises(ng.NeuGymOverwriteError):
             w.init_agent()
 
@@ -286,10 +286,10 @@ class TestGridWorldFunction(unittest.TestCase):
         w = GridWorld()
         w.add_area((2, 2))
         w.init_agent((1, 1, 0))
-        self.assertEqual(w.agent.init_state, (1, 1, 0))
+        self.assertEqual(w.get_agent_state("init"), (1, 1, 0))
         w.init_agent((1, 1, 1), overwrite=True)
-        self.assertEqual(w.agent.init_state, (1, 1, 1))
-        self.assertEqual(w.agent.current_state, (1, 1, 1))
+        self.assertEqual(w.get_agent_state("init"), (1, 1, 1))
+        self.assertEqual(w.get_agent_state("current"), (1, 1, 1))
 
     def test_get_agent_state(self):
         # Test 'get_agent_state' function.
@@ -300,6 +300,7 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertEqual(w.get_agent_state(), (0, 0, 0))
         w.step((1, 0))
         self.assertEqual(w.get_agent_state(), (1, 0, 0))
+        self.assertEqual(w.get_agent_state(when="init"), (0, 0, 0))
         w.step((0, 1))
         self.assertEqual(w.get_agent_state(), (0, 0, 0))
 
@@ -318,26 +319,26 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertEqual(ns, (0, 0, 0))
         self.assertEqual(r, 0)
         self.assertEqual(d, False)
-        self.assertEqual(w.agent.current_state, (0, 0, 0))
+        self.assertEqual(w.get_agent_state("current"), (0, 0, 0))
 
         ns, r, d = w.step((1, 0))
         self.assertEqual(ns, (1, 0, 0))
         self.assertEqual(r, -0.1)
         self.assertEqual(d, False)
-        self.assertEqual(w.agent.current_state, (1, 0, 0))
+        self.assertEqual(w.get_agent_state("current"), (1, 0, 0))
 
         ns, r, d = w.step((-1, 0))
         self.assertEqual(ns, (0, 0, 0))
         self.assertEqual(r, 0.1)
         self.assertEqual(d, False)
-        self.assertEqual(w.agent.current_state, (0, 0, 0))
+        self.assertEqual(w.get_agent_state("current"), (0, 0, 0))
 
         w.step((1, 0))
         ns, r, d = w.step((0, 1))
         self.assertEqual(ns, (1, 0, 1))
         self.assertEqual(r, 9.9)
         self.assertEqual(d, True)
-        self.assertEqual(w.agent.current_state, (0, 0, 0))
+        self.assertEqual(w.get_agent_state("current"), (0, 0, 0))
 
         self.assertEqual(w.time, 5)
 
@@ -354,7 +355,7 @@ class TestGridWorldFunction(unittest.TestCase):
         with self.assertRaises(ng.NeuGymOverwriteError):
             w.set_reset_checkpoint()
         w.set_reset_checkpoint(overwrite=True)
-        self.assertEqual(w.reset_state["time"], 1)
+        self.assertEqual(w._reset_state["time"], 1)
 
     def test_reset(self):
         w = GridWorld()
@@ -374,9 +375,9 @@ class TestGridWorldFunction(unittest.TestCase):
             w.reset()
             self.assertFalse(w.world.has_edge((1, 0, 2), (0, 0, 0)))
             self.assertEqual(len(w._alias), 2)
-            self.assertEqual(len(w.objects), 1)
-            self.assertEqual(w.agent.current_state, (1, 0, 0))
-            self.assertEqual(w.agent.init_state, (1, 0, 0))
+            self.assertEqual(len(w._objects), 1)
+            self.assertEqual(w.get_agent_state("current"), (1, 0, 0))
+            self.assertEqual(w.get_agent_state("init"), (1, 0, 0))
             self.assertEqual(w.time, 0)
 
 
