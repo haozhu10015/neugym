@@ -27,8 +27,8 @@ class TestGridWorldFunction(unittest.TestCase):
         w.add_area((2, 2))
         self.assertEqual(w.num_area, 1)
         self.assertTrue(((0, 0, 0), (1, 0, 0)) in w.world.edges)
-        self.assertEqual(w.alias.get((0, 1, 0)), (1, 0, 0))
-        self.assertEqual(w.alias.get((1, -1, 0)), (0, 0, 0))
+        self.assertEqual(w._alias.get((0, 1, 0)), (1, 0, 0))
+        self.assertEqual(w._alias.get((1, -1, 0)), (0, 0, 0))
         self.assertEqual(w.world.number_of_nodes(), 5)
         self.assertEqual(w.world.number_of_edges(), 5)
         self.assertEqual(w.get_area_altitude(1).all(), np.zeros((2, 2)).all())
@@ -44,9 +44,9 @@ class TestGridWorldFunction(unittest.TestCase):
         w.add_area((2, 3), access_from=(1, 1, 1), access_to=(1, 0), register_action=(0, 1))
         self.assertEqual(w.num_area, 2)
         self.assertTrue(((1, 1, 1), (2, 1, 0)) in w.world.edges)
-        self.assertEqual(w.alias.get((1, 1, 2)), (2, 1, 0))
-        self.assertEqual(w.alias.get((2, 1, -1)), (1, 1, 1))
-        self.assertEqual(len(w.alias), 4)
+        self.assertEqual(w._alias.get((1, 1, 2)), (2, 1, 0))
+        self.assertEqual(w._alias.get((2, 1, -1)), (1, 1, 1))
+        self.assertEqual(len(w._alias), 4)
         with self.assertRaises(ValueError):
             w.add_area((3, 3), access_from=(0, 0))
         with self.assertRaises(ValueError):
@@ -74,7 +74,7 @@ class TestGridWorldFunction(unittest.TestCase):
         w.add_object((3, 1, 1), 1, 0.7)
         self.assertEqual(w.world.number_of_edges(), 59)
         self.assertTrue(((1, 1, 1), (2, 0, 0)) in w.world.edges)
-        self.assertEqual(w.alias.get((1, 2, 1)), (2, 0, 0))
+        self.assertEqual(w._alias.get((1, 2, 1)), (2, 0, 0))
         self.assertTrue(((0, 0, 0), (3, 0, 0)) in w.world.edges)
 
         # Test remove "bridge" area.
@@ -86,10 +86,10 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertEqual(w.world.number_of_nodes(), 30)
         self.assertEqual(w.world.number_of_edges(), 46)
         self.assertTrue(((1, 1, 1), (2, 0, 0)) not in w.world.edges)
-        self.assertTrue((2, -1, 0) not in w.alias.keys())
-        self.assertEqual(w.alias.get((0, 0, 1)), (2, 0, 0))
-        self.assertTrue(w.alias.get((2, 0, -1)), (0, 0, 0))
-        self.assertEqual(len(w.alias), 4)
+        self.assertTrue((2, -1, 0) not in w._alias.keys())
+        self.assertEqual(w._alias.get((0, 0, 1)), (2, 0, 0))
+        self.assertTrue(w._alias.get((2, 0, -1)), (0, 0, 0))
+        self.assertEqual(len(w._alias), 4)
         self.assertEqual(len(w.objects), 2)
         for obj in w.objects:
             self.assertTrue(obj.coord != (2, 0, 0))
@@ -106,9 +106,9 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertEqual(len(w.objects), 1)
         self.assertEqual((1, 1, 1), w.objects[0].coord)
         self.assertTrue((1, 1, 1) in w.world.nodes)
-        self.assertEqual(len(w.alias), 2)
-        self.assertEqual(w.alias.get((0, -1, 0)), (1, 4, 4))
-        self.assertEqual(w.alias.get((1, 5, 4)), (0, 0, 0))
+        self.assertEqual(len(w._alias), 2)
+        self.assertEqual(w._alias.get((0, -1, 0)), (1, 4, 4))
+        self.assertEqual(w._alias.get((1, 5, 4)), (0, 0, 0))
 
         # Test remove origin.
         with self.assertRaises(ng.NeuGymPermissionError):
@@ -132,8 +132,8 @@ class TestGridWorldFunction(unittest.TestCase):
         with self.assertRaises(ng.NeuGymConnectivityError):
             w.add_path((1, 1, 1), (2, 1, 1))
         w.add_path((1, 1, 1), (2, 2, 0))
-        self.assertEqual(w.alias.get((1, 1, 2)), (2, 2, 0))
-        self.assertEqual(w.alias.get((2, 2, -1)), (1, 1, 1))
+        self.assertEqual(w._alias.get((1, 1, 2)), (2, 2, 0))
+        self.assertEqual(w._alias.get((2, 2, -1)), (1, 1, 1))
         self.assertTrue(((1, 1, 1), (2, 2, 0)) in w.world.edges)
 
         # Test add multiple paths between two positions.
@@ -151,13 +151,13 @@ class TestGridWorldFunction(unittest.TestCase):
         w.add_path((1, 1, 0), (2, 0, 4))
         with self.assertRaises(ng.NeuGymOverwriteError):
             w.add_path((1, 1, 0), (2, 0, 4))
-        self.assertEqual(len(w.alias), 6)
+        self.assertEqual(len(w._alias), 6)
         with self.assertWarns(RuntimeWarning):
             w.remove_path((1, 1, 3), (0, 0, 0))
         with self.assertRaises(ValueError):
             w.remove_path((0, 0), (1, 1, 1))
         w.remove_path((1, 1, 0), (2, 0, 4))
-        self.assertEqual(len(w.alias), 4)
+        self.assertEqual(len(w._alias), 4)
         self.assertTrue(((1, 1, 0), (2, 0, 4)) not in w.world.edges)
 
         # Test remove path within an area.
@@ -361,7 +361,7 @@ class TestGridWorldFunction(unittest.TestCase):
             w.init_agent((0, 0, 0), overwrite=True)
             w.reset()
             self.assertFalse(w.world.has_edge((1, 0, 2), (0, 0, 0)))
-            self.assertEqual(len(w.alias), 2)
+            self.assertEqual(len(w._alias), 2)
             self.assertEqual(len(w.objects), 1)
             self.assertEqual(w.agent.current_state, (1, 0, 0))
             self.assertEqual(w.agent.init_state, (1, 0, 0))

@@ -1,3 +1,4 @@
+========
 Tutorial
 ========
 
@@ -6,7 +7,7 @@ Tutorial
 This guide help you start working with NeuGym.
 
 Creating a world
-----------------
+================
 
 Create a gridworld with only an one-state origin.
 
@@ -16,13 +17,13 @@ Create a gridworld with only an one-state origin.
     >>> W = env.GridWorld()
     >>> print(W)
     GridWorld(
-        time=0
-        origin=Origin([0])(shape=(1, 1))
-        areas=()
-        objects=()
-        actions=((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
-        agent=None
-        has_reset_state=False
+        time=0,
+        origin=Origin([0])(shape=(1, 1)),
+        areas=(),
+        objects=(),
+        actions=((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)),
+        agent=None,
+        has_reset_state=False,
     )
 
 
@@ -35,24 +36,25 @@ area, respectively.
 The world can be grown in several aspects.
 
 Adding areas, objects, and agent
---------------------------------
+================================
 
 Areas
-^^^^^
+-----
 
 Add one area of shape (2, 2).
 
     >>> W.add_area((2, 2))
+    >>> print(W)
     GridWorld(
-        time=0
-        origin=Origin([0])(shape=(1, 1))
+        time=0,
+        origin=Origin([0])(shape=(1, 1)),
         areas=(
             [1] Area(shape=(2, 2))
-        )
-        objects=()
-        actions=((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
-        agent=None
-        has_reset_state=False
+        ),
+        objects=(),
+        actions=((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)),
+        agent=None,
+        has_reset_state=False,
     )
 
 By default, adding a new area like this will connect the (0, 0) state of the new area
@@ -82,41 +84,41 @@ It is even possible to further register a certain action for this path.
       LEFT(0, -1).
 
 Objects
-^^^^^^^
+-------
 
 Agent
-^^^^^
+-----
 
 Setting world details
----------------------
+=====================
 
 More paths
-^^^^^^^^^^
+----------
 
 Altitude
-^^^^^^^^
+--------
 
 Modifying the world
--------------------
+===================
 
 Removing Areas
-^^^^^^^^^^^^^^
+--------------
 
 Removing Paths
-^^^^^^^^^^^^^^
+--------------
 
 Removing and updating objects
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+-----------------------------
 
 Resetting the world
-------------------------
+===================
 
 Setting checkpoint
-^^^^^^^^^^^^^^^^^^
+------------------
 
 Resetting
-^^^^^^^^^
+---------
 
 Moving the agent in the world
------------------------------
+=============================
 

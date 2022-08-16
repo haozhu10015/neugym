@@ -204,7 +204,7 @@ class GridWorld:
         origin_altitude_mat = np.zeros(origin_shape)
         self.set_altitude(0, origin_altitude_mat)
 
-        self.alias = {}
+        self._alias = {}
         self.objects = []
         self.actions = ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
 
@@ -217,7 +217,7 @@ class GridWorld:
             "world": None,
             "time": None,
             "num_area": None,
-            "alias": None,
+            "_alias": None,
             "objects": None,
             "agent": None
         }
@@ -226,6 +226,13 @@ class GridWorld:
                  access_from=None, access_to=None,
                  register_action=None):
         """Add a new area to the world.
+
+        .. note::
+            When an inter-area path from ``access_from`` to ``access_to`` with
+            action ``register_action`` is built, a reverse path is also build at
+            the same time, i.e. the agent can also move from ``access_to`` to
+            ``access_from`` with the reverse action of ``register_action`` (e.g.
+            the reverse action of **UP(1, 0)** is **DOWN(-1, 0)**).
 
         Parameters
         ----------
@@ -245,7 +252,7 @@ class GridWorld:
 
         register_action : tuple of ints (optional, default: None)
             Register an action to transport the agent from ``access_from`` to
-            ``access_to``
+            ``access_to``.
 
         Examples
         --------
@@ -342,7 +349,7 @@ class GridWorld:
 
         # Remove invalid alias.
         new_alias = {}
-        for key, value in self.alias.items():
+        for key, value in self._alias.items():
             if key[0] == area_idx:
                 continue
             elif key[0] > area_idx:
@@ -358,7 +365,7 @@ class GridWorld:
                 new_value = value
             new_alias[new_key] = new_value
 
-        self.alias = new_alias
+        self._alias = new_alias
 
         # Remove objects in the area to be removed.
         new_objects = []
@@ -375,7 +382,13 @@ class GridWorld:
     def add_path(self, coord_from, coord_to, register_action=None):
         """Add a new inter-area connection.
 
-        Creating a path within the same area is not allowed.
+        .. note::
+            - Creating a path within the same area is not allowed.
+            - When an inter-area path from ``coord_from`` to ``coord_to`` with
+              action ``register_action`` is built, a reverse path is also build at
+              the same time, i.e. the agent can also move from ``coord_to`` to
+              ``coord_from`` with the reverse action of ``register_action`` (e.g.
+              the reverse action of **UP(1, 0)** is **DOWN(-1, 0)**).
 
         Parameters
         ----------
@@ -435,7 +448,7 @@ class GridWorld:
             alias_to = tuple([coord_from[0]] + [coord_from[1] + dx] + [coord_from[2] + dy])
             alias_from = tuple([coord_to[0]] + [coord_to[1] - dx] + [coord_to[2] - dy])
             if self.world.has_node(alias_to) or self.world.has_node(alias_from) or \
-                    alias_to in self.alias.keys() or alias_from in self.alias.keys():
+                    alias_to in self._alias.keys() or alias_from in self._alias.keys():
                 continue
             free_actions.append(action)
 
@@ -458,12 +471,12 @@ class GridWorld:
             dx, dy = free_actions[0]
 
         # Register action.
-        self.alias[tuple([coord_from[0]] +
-                         [coord_from[1] + dx] +
-                         [coord_from[2] + dy])] = coord_to
-        self.alias[tuple([coord_to[0]] +
-                         [coord_to[1] - dx] +
-                         [coord_to[2] - dy])] = coord_from
+        self._alias[tuple([coord_from[0]] +
+                          [coord_from[1] + dx] +
+                          [coord_from[2] + dy])] = coord_to
+        self._alias[tuple([coord_to[0]] +
+                          [coord_to[1] - dx] +
+                          [coord_to[2] - dy])] = coord_from
         self.world.add_edge(coord_from, coord_to)
 
     def remove_path(self, coord_from, coord_to):
@@ -513,8 +526,8 @@ class GridWorld:
                                [coord_to[1] - dx] +
                                [coord_to[2] - dy])
 
-            if self.alias.get(alias_to) == coord_to and \
-                    self.alias.get(alias_from) == coord_from:
+            if self._alias.get(alias_to) == coord_to and \
+                    self._alias.get(alias_from) == coord_from:
                 remove_list.append(alias_to)
                 remove_list.append(alias_from)
 
@@ -525,7 +538,7 @@ class GridWorld:
         else:
             assert len(remove_list) == 2
             for key in remove_list:
-                self.alias.pop(key)
+                self._alias.pop(key)
             self.world.remove_edge(coord_from, coord_to)
 
     def add_object(self, coord, reward, prob, punish=0):
@@ -860,8 +873,8 @@ class GridWorld:
         current_state = self.agent.current_state
         next_state = (current_state[0], current_state[1] + dx, current_state[2] + dy)
         if not self.world.has_node(next_state):
-            if next_state in self.alias.keys():
-                next_state = self.alias[next_state]
+            if next_state in self._alias.keys():
+                next_state = self._alias[next_state]
             else:
                 next_state = current_state
 
@@ -931,28 +944,36 @@ class GridWorld:
 
     def __repr__(self):
         msg = "GridWorld(\n" \
-              "\ttime={}\n" \
-              "\torigin=Origin([0])(shape={})\n".format(self.time, self.get_area_shape(0))
+              "\ttime={},\n" \
+              "\torigin=Origin([0])(shape={}),\n".format(self.time, self.get_area_shape(0))
 
         if self.num_area == 0:
-            msg += "\tareas=()\n"
+            msg += "\tareas=(),\n"
         else:
             msg += "\tareas=(\n"
             for i in range(1, self.num_area + 1):
-                msg += "\t\t[{}] Area(shape={})\n".format(i, self.get_area_shape(i))
-            msg += "\t)\n"
+                msg += "\t\t[{}] Area(shape={})".format(i, self.get_area_shape(i))
+                if i != self.num_area:
+                    msg += ",\n"
+                else:
+                    msg += "\n"
+            msg += "\t),\n"
 
         if len(self.objects) == 0:
-            msg += "\tobjects=()\n"
+            msg += "\tobjects=(),\n"
         else:
             msg += "\tobjects=(\n"
             for i, obj in enumerate(self.objects):
-                msg += "\t\t[{}] {}\n".format(i, str(obj))
-            msg += "\t)\n"
+                msg += "\t\t[{}] {}".format(i, str(obj))
+                if i != len(self.objects) - 1:
+                    msg += ",\n"
+                else:
+                    msg += "\n"
+            msg += "\t),\n"
 
-        msg += "\tactions={}\n".format(self.actions)
-        msg += "\tagent={}\n".format(str(self.agent))
-        msg += "\thas_reset_state={}\n".format(self.has_reset_checkpoint)
+        msg += "\tactions={},\n".format(self.actions)
+        msg += "\tagent={},\n".format(str(self.agent))
+        msg += "\thas_reset_state={},\n".format(self.has_reset_checkpoint)
         msg += ")"
 
         return msg

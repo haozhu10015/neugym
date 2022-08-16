@@ -10,10 +10,3 @@ NeuGym Documentation
    reference/index
    tutorial
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
