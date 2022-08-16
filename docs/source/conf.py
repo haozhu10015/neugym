@@ -14,8 +14,8 @@ import neugym as ng
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'NeuGym'
-copyright = '2022, Hao Zhu'
-author = 'Hao Zhu'
+copyright = '2022, NeuGym Team'
+# author = 'Hao Zhu'
 release = ng.__version__
 
 # -- General configuration ---------------------------------------------------

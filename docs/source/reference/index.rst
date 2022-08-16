@@ -8,4 +8,5 @@ Reference
     :maxdepth: 2
 
     environments/index
-    utils.rst
+    utils
+    exceptions

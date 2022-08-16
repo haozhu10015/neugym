@@ -5,8 +5,9 @@ NeuGym Documentation
 ====================
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   reference/index
-   tutorial
+    install
+    reference/index
+    tutorial
 

@@ -1,3 +1,5 @@
+"""Base exceptions and errors for NeuGym"""
+
 __all__ = [
     "NeuGymException",
     "NeuGymError",
