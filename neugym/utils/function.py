@@ -15,7 +15,7 @@ def save_env(env, filename, protocol=pickle.HIGHEST_PROTOCOL):
     env : environment object
         NeuGym environment object.
 
-    filename : string
+    filename : str
        Filename to write.
        Filenames ending in .gz or .bz2 will be compressed.
     protocol : integer
@@ -40,7 +40,7 @@ def load_env(filename):
 
     Parameters
     ----------
-    filename : string
+    filename : str
         Filename to read.
         Filenames ending in .gz or .bz2 will be uncompressed.
 

@@ -36,8 +36,11 @@ extensions = [
 
 templates_path = ['_templates']
 exclude_patterns = []
+suppress_warnings = ["ref.citation", "ref.footnote"]
 
+autosummary_generate = True
 add_module_names = False
+numpydoc_show_class_members = False
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
@@ -45,3 +48,9 @@ add_module_names = False
 html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
 html_title = "NeuGym {} Documentation".format(release)
+
+html_theme_options = {
+    "collapse_navigation": True,
+    "navigation_depth": 3,
+    "show_prev_next": False
+}

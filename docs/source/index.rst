@@ -1,10 +1,11 @@
-==================================
+.. _contents:
+
+====================
 NeuGym Documentation
-==================================
+====================
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
 
    reference/index
    tutorial

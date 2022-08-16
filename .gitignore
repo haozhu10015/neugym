@@ -122,6 +122,7 @@ instance/
 
 # Sphinx documentation
 docs/_build/
+generated/
 
 # PyBuilder
 .pybuilder/
@@ -188,3 +189,4 @@ dmypy.json
 
 # Cython debug symbols
 cython_debug/
+

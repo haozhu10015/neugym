@@ -1,7 +1,11 @@
+.. _reference:
+
+=========
 Reference
 =========
 
 .. toctree::
-   :maxdepth: 2
+    :maxdepth: 2
 
-   environment
+    environments/index
+    utils.rst

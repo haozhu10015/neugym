@@ -1,7 +1,6 @@
 import unittest
 
 import numpy as np
-import networkx as nx
 import neugym as ng
 from neugym.environment.gridworld import GridWorld
 
