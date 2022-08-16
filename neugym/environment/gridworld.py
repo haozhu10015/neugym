@@ -827,6 +827,26 @@ class GridWorld:
             raise ng.NeuGymOverwriteError("Agent already exists, "
                                           "set 'overwrite=True' to overwrite")
 
+    def get_agent_state(self):
+        """Get current state of the agent.
+
+        Returns
+        -------
+        agent_current_state : tuple of ints
+            Coordinate of the state where the agent stays currently.
+
+        Examples
+        --------
+        >>> W = GridWorld()
+        >>> W.add_area((2, 2))
+        >>> W.init_agent()
+        >>> W.step((1, 0))
+        ((1, 0, 0), 0.0, False)
+        >>> W.get_agent_state()
+        (1, 0, 0)
+        """
+        return self.agent.current_state
+
     def step(self, action):
         """Make the agent move toward direction given by ``action``.
 

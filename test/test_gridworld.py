@@ -291,6 +291,18 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertEqual(w.agent.init_state, (1, 1, 1))
         self.assertEqual(w.agent.current_state, (1, 1, 1))
 
+    def test_get_agent_state(self):
+        # Test 'get_agent_state' function.
+        w = GridWorld()
+        w.add_area((1, 2))
+        w.add_object((1, 0, 1), 10, 1)
+        w.init_agent()
+        self.assertEqual(w.get_agent_state(), (0, 0, 0))
+        w.step((1, 0))
+        self.assertEqual(w.get_agent_state(), (1, 0, 0))
+        w.step((0, 1))
+        self.assertEqual(w.get_agent_state(), (0, 0, 0))
+
     def test_step(self):
         # Test 'step' function.
         w = GridWorld()

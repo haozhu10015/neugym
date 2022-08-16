@@ -40,9 +40,11 @@ Get environment information
 .. autosummary::
     :toctree: generated/
 
-    GridWorld.get_object_attribute
+
     GridWorld.get_area_shape
     GridWorld.get_area_altitude
+    GridWorld.get_object_attribute
+    GridWorld.get_agent_state
 
 Moving the agent
 ----------------
