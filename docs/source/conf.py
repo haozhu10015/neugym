@@ -32,6 +32,7 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
+    "sphinx_copybutton",
     "numpydoc",
     "texext"
 ]
@@ -44,18 +45,30 @@ autosummary_generate = True
 add_module_names = False
 numpydoc_show_class_members = False
 
+copybutton_prompt_text = r">>> |\.\.\. |\$ |In \[\d*\]: | {2,5}\.\.\.: | {5,8}: "
+copybutton_prompt_is_regexp = True
+
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
+html_css_files = ["custom.css"]
 html_title = "NeuGym {} Documentation".format(release)
 
 html_theme_options = {
     "collapse_navigation": True,
     "navigation_depth": 3,
-    "show_prev_next": False
+    "show_prev_next": False,
+    "icon_links": [
+        {
+            "name": "GitHub",
+            "url": "https://github.com/HaoZhu10015/neugym",
+            "icon": "fab fa-github-square",
+        },
+    ],
 }
+
 
 # -- Options for LaTeX output -------------------------------------------------
 
