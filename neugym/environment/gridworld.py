@@ -31,8 +31,8 @@ class GridWorld:
 
         R_{move} = A_s - A_{s + 1}
 
-    where :math:`R_{move}` is the movement reward and :math:`A`
-    represents the altitude of current state :math:`s` and next state :math:`s + 1`.
+    where $R_{move}$ is the movement reward and $A$
+    represents the altitude of current state $s$ and next state $s + 1$.
 
     At each position(state), the agent can choose from 5 ``actions`` to move towards
     **UP**, **DOWN**, **LEFT**, **RIGHT**, and **STAY** in the same state.
@@ -261,7 +261,9 @@ class GridWorld:
         >>> W.add_area((2, 2))
         >>> W.add_area((3, 3), access_from=(1, 1, 2))
         >>> W.add_area((4, 4), access_from=(0, 0, 0), access_to=(3, 3))
-        >>> W.add_area((2, 2), access_from=(4, 0, 0), access_to=(1, 1), register_action=(0, -1))
+        >>> W.add_area((2, 2),
+        ...            access_from=(4, 0, 0), access_to=(1, 1),
+        ...            register_action=(0, -1))
         """
         if access_from is None:
             access_from = (0, 0, 0)
@@ -893,7 +895,7 @@ class GridWorld:
 
         References
         ---------
-        .. [1] NetworkX Documentation: https://networkx.org/
+        .. [#] NetworkX Documentation: https://networkx.org/
         """
         return self._world.copy()
 

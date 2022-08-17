@@ -28,7 +28,7 @@ def save_env(env, filename, protocol=pickle.HIGHEST_PROTOCOL):
 
     References
     ----------
-    .. [1] https://docs.python.org/3/library/pickle.html
+    .. [#] https://docs.python.org/3/library/pickle.html
 
     """
     with open(filename, 'wb') as f:
@@ -57,7 +57,7 @@ def load_env(filename):
 
     References
     ----------
-    .. [1] https://docs.python.org/3/library/pickle.html
+    .. [*] https://docs.python.org/3/library/pickle.html
 
     """
     with open(filename, 'rb') as f:

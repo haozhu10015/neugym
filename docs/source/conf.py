@@ -14,9 +14,10 @@ import neugym as ng
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'NeuGym'
-copyright = '2022, NeuGym Team'
+copyright = '2022, NeuGym Developers'
 # author = 'Hao Zhu'
-release = ng.__version__
+version = ng.__version__
+release = ng.__version__.replace("_", "")
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
@@ -31,7 +32,8 @@ extensions = [
     "sphinx.ext.todo",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
-    "numpydoc"
+    "numpydoc",
+    "texext"
 ]
 
 templates_path = ['_templates']
@@ -54,3 +56,24 @@ html_theme_options = {
     "navigation_depth": 3,
     "show_prev_next": False
 }
+
+# -- Options for LaTeX output -------------------------------------------------
+
+# Use a latex engine that allows for unicode characters in docstrings
+latex_engine = "xelatex"
+latex_paper_size = "a4"
+
+# Grouping the document tree into LaTeX files. List of tuples
+# (source start file, target name, title, author, document class [howto/manual]).
+latex_documents = [
+    (
+        "reference/index",
+        "neugym_reference.tex",
+        "NeuGym Reference",
+        "Hao Zhu",
+        "manual",
+        1,
+    )
+]
+
+latex_appendices = ["tutorial"]
