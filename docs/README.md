@@ -11,11 +11,11 @@ packages needed to build the documentation by entering:
 
 in the `docs/` directory.
 
-To build the HTML documentation, enter:
+Then to build the HTML documentation, enter:
 
     make html
 
-in the `doc/` directory. This will generate a `build/html` subdirectory
+This will generate a `build/html` subdirectory
 containing the built documentation.
 
 To build the PDF documentation, enter:
