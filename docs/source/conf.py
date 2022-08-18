@@ -38,10 +38,7 @@ extensions = [
 ]
 
 templates_path = ['_templates']
-exclude_patterns = [
-    "source/_templates/autosummary/base.rst",
-    "source/_templates/autosummary/class.rst"
-]
+exclude_patterns = []
 
 suppress_warnings = ["ref.citation", "ref.footnote"]
 
