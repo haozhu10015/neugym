@@ -3,7 +3,6 @@ Utilities
 =========
 
 .. automodule:: neugym.utils
-.. currentmodule:: neugym.utils
 
 Saving and loading environment
 ==============================

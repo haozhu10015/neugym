@@ -7,7 +7,7 @@ GridWorld
 Overview
 ========
 
-.. automodule:: neugym.environment.gridworld
+.. currentmodule:: neugym.environment.gridworld
 
 
 .. autoclass:: GridWorld

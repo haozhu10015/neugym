@@ -89,4 +89,7 @@ latex_documents = [
     )
 ]
 
-latex_appendices = ["tutorial"]
+latex_appendices = [
+    "install",
+    "tutorial"
+]

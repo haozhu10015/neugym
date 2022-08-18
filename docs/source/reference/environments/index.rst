@@ -4,6 +4,8 @@
 Environment types
 =================
 
+.. automodule:: neugym.environment
+
 .. toctree::
    :maxdepth: 2
 
