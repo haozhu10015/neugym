@@ -37,10 +37,10 @@ extensions = [
     "texext"
 ]
 
-# templates_path = ['_templates']
+templates_path = ['_templates']
 exclude_patterns = [
-    "_templates/autosummary/base.rst",
-    "_templates/autosummary/class.rst"
+    "source/_templates/autosummary/base.rst",
+    "source/_templates/autosummary/class.rst"
 ]
 
 suppress_warnings = ["ref.citation", "ref.footnote"]
