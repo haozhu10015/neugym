@@ -38,7 +38,7 @@ extensions = [
 ]
 
 templates_path = ['_templates']
-exclude_patterns = []
+exclude_patterns = ["venv"]
 suppress_warnings = ["ref.citation", "ref.footnote"]
 
 autosummary_generate = True
