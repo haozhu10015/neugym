@@ -3,11 +3,11 @@
 NeuGym is a Python package for reinforcement learning environment of animal behavior modeling, 
 which is still under development.
 
-* **Documentation:** 
+* **Documentation:** https://neugym.readthedocs.io/en/latest/
 * **Mailing list:** https://groups.google.com/g/neugym
 * **Source code:** https://github.com/HaoZhu10015/neugym
 * **Bug reports:** https://github.com/HaoZhu10015/neugym/issues
-* **Tutorial:** 
+* **Tutorial (TODO):** https://neugym.readthedocs.io/en/latest/tutorial.html
 
 ## Install
 
