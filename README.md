@@ -11,27 +11,15 @@ which is still under development.
 
 ## Install
 
-### PyPI
-
-Install the latest version of NeuGym from PyPI: 
-
+Install the current release of NeuGym with ``pip``: 
 
     $ pip install neugym
 
-
-### Source code
-
-You can also install NeuGym from source code:
-
-
-    $ git clone https://github.com/HaoZhu10015/neugym.git
-    $ pip install ./neugym
-
+For more installing options please refer to [Install].
 
 ## Citation
 
 If you find this code useful for your research, please cite:
-
 
     @misc{HaoZhu10015_2022_NeuGym,
       author = {Hao Zhu},
