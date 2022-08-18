@@ -21,7 +21,9 @@ with ``pip`` by entering::
     $ pip install neugym
 
 Alternatively, you can also manually download NeuGym source code from
-GitHub or `PyPI <https://pypi.org/project/neugym/>`_. To install one of these versions, unpack it and run the
+`GitHub <https://github.com/HaoZhu10015/neugym/releases>`_ or
+`PyPI <https://pypi.org/project/neugym/>`_.
+To install one of these versions, unpack it and run the
 following command from the top-level source directory using the terminal::
 
     $ pip install .
