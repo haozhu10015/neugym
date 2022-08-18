@@ -55,7 +55,7 @@ copybutton_prompt_is_regexp = True
 html_theme = 'pydata_sphinx_theme'
 html_static_path = ['_static']
 html_css_files = ["custom.css"]
-html_title = "NeuGym {} Documentation".format(release)
+html_title = "NeuGym"
 
 html_theme_options = {
     "collapse_navigation": True,
