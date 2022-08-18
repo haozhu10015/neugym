@@ -37,7 +37,7 @@ extensions = [
     "texext"
 ]
 
-templates_path = ['_templates']
+# templates_path = ['_templates']
 exclude_patterns = [
     "_templates/autosummary/base.rst",
     "_templates/autosummary/class.rst"
