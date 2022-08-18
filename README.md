@@ -7,7 +7,7 @@ which is still under development.
 * **Mailing list:** https://groups.google.com/g/neugym
 * **Source code:** https://github.com/HaoZhu10015/neugym
 * **Bug reports:** https://github.com/HaoZhu10015/neugym/issues
-* **Tutorial (TODO):** https://neugym.readthedocs.io/en/latest/tutorial.html
+* **Tutorial:** https://neugym.readthedocs.io/en/latest/tutorial.html
 
 ## Install
 
@@ -15,7 +15,8 @@ Install the current release of NeuGym with ``pip``:
 
     $ pip install neugym
 
-For more installing options please refer to [Install].
+For more installing options please refer to 
+[Install](https://neugym.readthedocs.io/en/latest/install.html).
 
 ## Citation
 

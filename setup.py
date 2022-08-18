@@ -25,6 +25,7 @@ setup(
     project_urls=project_urls,
     description=description,
     long_description=long_distribution,
+    long_description_content_type="text/markdown",
     packages=find_packages(),
     install_requires=requirements,
     zip_safe=False
