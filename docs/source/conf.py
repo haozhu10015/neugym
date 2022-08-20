@@ -84,7 +84,7 @@ latex_documents = [
         "reference/index",
         "neugym_reference.tex",
         "NeuGym Reference",
-        "Hao Zhu",
+        "NeuGym Development Team",
         "manual",
         1,
     )
