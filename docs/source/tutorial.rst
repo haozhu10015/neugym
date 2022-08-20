@@ -287,7 +287,7 @@ To remove the new generated path but keep the area:
 Removing and updating objects
 -----------------------------
 
-For this demonstration we will first add some new objects to Area[4].
+For this demonstration we will first add some new objects to ``Area[4]``.
 
     >>> W.add_object((4, 0, 0), reward=10, prob=0.5)
     >>> W.add_object((4, 1, 1), reward=100, prob=0.1)
