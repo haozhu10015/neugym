@@ -1102,37 +1102,44 @@ class GridWorld:
             setattr(self, '_' + key, copy.deepcopy(value))
 
     def __repr__(self):
-        msg = "GridWorld(\n" \
-              "\ttime={},\n" \
-              "\torigin=Origin([0])(shape={}),\n".format(self._time, self.get_area_shape(0))
+        msg = "GridWorld:\n"
+        msg += "".join(["=" for _ in range(10)])
+        msg += "\n"
+        msg += "time: {}\n" \
+               "origin: Origin([0])(shape={})\n".format(self._time, self.get_area_shape(0))
 
         if self._num_area == 0:
-            msg += "\tareas=(),\n"
+            msg += "areas: None\n"
         else:
-            msg += "\tareas=(\n"
+            msg += "areas: \n"
             for i in range(1, self._num_area + 1):
-                msg += "\t\t[{}] Area(shape={})".format(i, self.get_area_shape(i))
-                if i != self._num_area:
-                    msg += ",\n"
-                else:
-                    msg += "\n"
-            msg += "\t),\n"
+                msg += "\t[{}] Area(shape={})\n".format(i, self.get_area_shape(i))
+
+        msg += "inter-area connections:\n"
+        for u, v in self.world.edges():
+            if u[0] == v[0]:
+                continue
+            else:
+                for a in self.actions:
+                    dx, dy = a
+                    alias = tuple([u[0]] + [u[1] + dx] + [u[2] + dy])
+                    try:
+                        self._alias[alias] == v
+                    except KeyError:
+                        continue
+                    else:
+                        msg += "\t{} + {} -> {}\n".format(u, a, v)
 
         if len(self._objects) == 0:
-            msg += "\tobjects=(),\n"
+            msg += "objects: None\n"
         else:
-            msg += "\tobjects=(\n"
+            msg += "objects:\n"
             for i, obj in enumerate(self._objects):
-                msg += "\t\t[{}] {}".format(i, str(obj))
-                if i != len(self._objects) - 1:
-                    msg += ",\n"
-                else:
-                    msg += "\n"
-            msg += "\t),\n"
+                msg += "\t[{}] {}\n".format(i, str(obj))
 
-        msg += "\tactions={},\n".format(self._actions)
-        msg += "\tagent={},\n".format(str(self._agent))
-        msg += "\thas_reset_state={},\n".format(self._has_reset_checkpoint)
-        msg += ")"
+        msg += "actions: {}\n".format(self._actions)
+        msg += "agent: {}\n".format(str(self._agent))
+        msg += "has_reset_state: {}\n".format(self._has_reset_checkpoint)
+        msg += "".join(["=" for _ in range(10)])
 
         return msg
