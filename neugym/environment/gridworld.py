@@ -1115,20 +1115,22 @@ class GridWorld:
             for i in range(1, self._num_area + 1):
                 msg += "\t[{}] Area(shape={})\n".format(i, self.get_area_shape(i))
 
-        msg += "inter-area connections:\n"
-        for u, v in self.world.edges():
-            if u[0] == v[0]:
-                continue
-            else:
-                for a in self.actions:
-                    dx, dy = a
-                    alias = tuple([u[0]] + [u[1] + dx] + [u[2] + dy])
-                    try:
-                        self._alias[alias] == v
-                    except KeyError:
-                        continue
-                    else:
-                        msg += "\t{} + {} -> {}\n".format(u, a, v)
+        if len(self._alias) == 0:
+            msg += "inter-area connections: None\n"
+        else:
+            msg += "inter-area connections:\n"
+            for u, v in self.world.edges():
+                if u[0] == v[0]:
+                    continue
+                else:
+                    for a in self.actions:
+                        dx, dy = a
+                        alias = tuple([u[0]] + [u[1] + dx] + [u[2] + dy])
+                        try:
+                            if self._alias[alias] == v:
+                                msg += "\t{} + {} -> {}\n".format(u, a, v)
+                        except KeyError:
+                            continue
 
         if len(self._objects) == 0:
             msg += "objects: None\n"
