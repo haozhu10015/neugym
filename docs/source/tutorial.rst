@@ -18,16 +18,17 @@ Create a gridworld environment with only an one-state origin.
 
     >>> W = env.GridWorld()
     >>> print(W)
-    GridWorld(
-        time=0,
-        origin=Origin([0])(shape=(1, 1)),
-        areas=(),
-        objects=(),
-        actions=((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)),
-        agent=None,
-        has_reset_state=False,
-    )
-
+    GridWorld:
+    ==========
+    time: 0
+    origin: Origin([0])(shape=(1, 1))
+    areas: None
+    inter-area connections: None
+    objects: None
+    actions: ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
+    agent: None
+    has_reset_state: False
+    ==========
 
 Now the gridworld only has one state: ``(0, 0, 0)``. Every state in the gridworld is
 represented by a tuple of length 3, where the first element denotes the
@@ -51,17 +52,19 @@ Add one area of shape ``(2, 2)``.
 
     >>> W.add_area((2, 2))
     >>> print(W)
-    GridWorld(
-        time=0,
-        origin=Origin([0])(shape=(1, 1)),
-        areas=(
-            [1] Area(shape=(2, 2))
-        ),
-        objects=(),
-        actions=((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)),
-        agent=None,
-        has_reset_state=False,
-    )
+    GridWorld:
+    ==========
+    time: 0
+    origin: Origin([0])(shape=(1, 1))
+    areas:
+        [1] Area(shape=(2, 2))
+    inter-area connections:
+        (0, 0, 0) + (1, 0) -> (1, 0, 0)
+    objects: None
+    actions: ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
+    agent: None
+    has_reset_state: False
+    ==========
 
 By default, adding a new area like this will connect the ``(0, 0)`` state of the new area
 with the gridworld origin ``(0, 0, 0)``. One can also manually specify the start and end state.
@@ -74,19 +77,23 @@ It is even possible to further register a certain action for this path.
     ...            access_from=(1, 0, 1), access_to=(1, 1),
     ...            register_action=(-1, 0))
     >>> print(W)
-    GridWorld(
-        time=0,
-        origin=Origin([0])(shape=(1, 1)),
-        areas=(
-            [1] Area(shape=(2, 2)),
-            [2] Area(shape=(2, 2)),
-            [3] Area(shape=(2, 2))
-        ),
-        objects=(),
-        actions=((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)),
-        agent=None,
-        has_reset_state=False,
-    )
+    GridWorld:
+    ==========
+    time: 0
+    origin: Origin([0])(shape=(1, 1))
+    areas:
+        [1] Area(shape=(2, 2))
+        [2] Area(shape=(2, 2))
+        [3] Area(shape=(2, 2))
+    inter-area connections:
+        (0, 0, 0) + (1, 0) -> (1, 0, 0)
+        (0, 0, 0) + (-1, 0) -> (2, 1, 1)
+        (1, 0, 1) + (-1, 0) -> (3, 1, 1)
+    objects: None
+    actions: ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
+    agent: None
+    has_reset_state: False
+    ==========
 
 .. note::
 
@@ -135,22 +142,25 @@ state coordinate to place the object for the first parameter:
     >>> W.add_object((1, 1, 1), reward=1, prob=0.7)
     >>> W.add_object((2, 0, 1), reward=1, prob=0.3, punish=-1)
     >>> print(W)
-    GridWorld(
-        time=0,
-        origin=Origin([0])(shape=(1, 1)),
-        areas=(
-            [1] Area(shape=(2, 2)),
-            [2] Area(shape=(2, 2)),
-            [3] Area(shape=(2, 2))
-        ),
-        objects=(
-            [0] Object(reward=1, punish=0, prob=0.7, coord=(1, 1, 1)),
-            [1] Object(reward=1, punish=-1, prob=0.3, coord=(2, 0, 1))
-        ),
-        actions=((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)),
-        agent=None,
-        has_reset_state=False,
-    )
+    GridWorld:
+    ==========
+    time: 0
+    origin: Origin([0])(shape=(1, 1))
+    areas:
+        [1] Area(shape=(2, 2))
+        [2] Area(shape=(2, 2))
+        [3] Area(shape=(2, 2))
+    inter-area connections:
+        (0, 0, 0) + (1, 0) -> (1, 0, 0)
+        (0, 0, 0) + (-1, 0) -> (2, 1, 1)
+        (1, 0, 1) + (-1, 0) -> (3, 1, 1)
+    objects:
+        [0] Object(reward=1, punish=0, prob=0.7, coord=(1, 1, 1))
+        [1] Object(reward=1, punish=-1, prob=0.3, coord=(2, 0, 1))
+    actions: ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
+    agent: None
+    has_reset_state: False
+    ==========
 
 Setting world details
 =====================
@@ -220,23 +230,28 @@ For demonstration, we will first add a new area and an extra path.
 
     >>> W.add_area((5, 5), access_from=(3, 1, 1))
     >>> print(W)
-    GridWorld(
-        time=0,
-        origin=Origin([0])(shape=(1, 1)),
-        areas=(
-            [1] Area(shape=(2, 2)),
-            [2] Area(shape=(2, 2)),
-            [3] Area(shape=(2, 2)),
-            [4] Area(shape=(5, 5))
-        ),
-        objects=(
-            [0] Object(reward=1, punish=0, prob=0.7, coord=(1, 1, 1)),
-            [1] Object(reward=1, punish=-1, prob=0.3, coord=(2, 0, 1))
-        ),
-        actions=((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)),
-        agent=None,
-        has_reset_state=False,
-    )
+    GridWorld:
+    ==========
+    time: 0
+    origin: Origin([0])(shape=(1, 1))
+    areas:
+        [1] Area(shape=(2, 2))
+        [2] Area(shape=(2, 2))
+        [3] Area(shape=(2, 2))
+        [4] Area(shape=(5, 5))
+    inter-area connections:
+        (0, 0, 0) + (1, 0) -> (1, 0, 0)
+        (0, 0, 0) + (-1, 0) -> (2, 1, 1)
+        (1, 0, 1) + (-1, 0) -> (3, 1, 1)
+        (2, 0, 0) + (-1, 0) -> (3, 1, 0)
+        (3, 1, 1) + (0, 1) -> (4, 0, 0)
+    objects:
+        [0] Object(reward=1, punish=0, prob=0.7, coord=(1, 1, 1))
+        [1] Object(reward=1, punish=-1, prob=0.3, coord=(2, 0, 1))
+    actions: ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
+    agent: None
+    has_reset_state: False
+    ==========
 
 
 To remove the new-added area:
@@ -277,26 +292,30 @@ For this demonstration we will first add some new objects to Area[4].
     >>> W.add_object((4, 0, 0), reward=10, prob=0.5)
     >>> W.add_object((4, 1, 1), reward=100, prob=0.1)
     >>> print(W)
-    GridWorld(
-        time=0,
-        origin=Origin([0])(shape=(1, 1)),
-        areas=(
-            [1] Area(shape=(2, 2)),
-            [2] Area(shape=(2, 2)),
-            [3] Area(shape=(2, 2)),
-            [4] Area(shape=(5, 5))
-        ),
-        objects=(
-            [0] Object(reward=1, punish=0, prob=0.7, coord=(1, 1, 1)),
-            [1] Object(reward=1, punish=-1, prob=0.3, coord=(2, 0, 1)),
-            [2] Object(reward=10, punish=0, prob=0.5, coord=(4, 0, 0)),
-            [3] Object(reward=100, punish=0, prob=0.1, coord=(4, 1, 1))
-        ),
-        actions=((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)),
-        agent=Agent(current_state=(0, 0, 0), init_state=(0, 0, 0)),
-        has_reset_state=False,
-    )
-
+    GridWorld:
+    ==========
+    time: 0
+    origin: Origin([0])(shape=(1, 1))
+    areas:
+        [1] Area(shape=(2, 2))
+        [2] Area(shape=(2, 2))
+        [3] Area(shape=(2, 2))
+        [4] Area(shape=(5, 5))
+    inter-area connections:
+        (0, 0, 0) + (1, 0) -> (1, 0, 0)
+        (0, 0, 0) + (-1, 0) -> (2, 1, 1)
+        (1, 0, 1) + (-1, 0) -> (3, 1, 1)
+        (2, 0, 0) + (-1, 0) -> (3, 1, 0)
+        (3, 1, 1) + (0, 1) -> (4, 0, 0)
+    objects:
+        [0] Object(reward=1, punish=0, prob=0.7, coord=(1, 1, 1))
+        [1] Object(reward=1, punish=-1, prob=0.3, coord=(2, 0, 1))
+        [2] Object(reward=10, punish=0, prob=0.5, coord=(4, 0, 0))
+        [3] Object(reward=100, punish=0, prob=0.1, coord=(4, 1, 1))
+    actions: ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
+    agent: None
+    has_reset_state: False
+    ==========
 
 To remove an object, you can use the ``remove_object`` function and specifying the
 coordinate of object to be removed:
@@ -307,24 +326,29 @@ To update the configuration of an object, you can use the ``update_object`` func
 
     >>> W.update_object((4, 1, 1), reward=99, prob=0.9)
     >>> print(W)
-    GridWorld(
-        time=0,
-        origin=Origin([0])(shape=(1, 1)),
-        areas=(
-            [1] Area(shape=(2, 2)),
-            [2] Area(shape=(2, 2)),
-            [3] Area(shape=(2, 2)),
-            [4] Area(shape=(5, 5))
-        ),
-        objects=(
-            [0] Object(reward=1, punish=0, prob=0.7, coord=(1, 1, 1)),
-            [1] Object(reward=1, punish=-1, prob=0.3, coord=(2, 0, 1)),
-            [2] Object(reward=99, punish=0, prob=0.9, coord=(4, 1, 1))
-        ),
-        actions=((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1)),
-        agent=Agent(current_state=(0, 0, 0), init_state=(0, 0, 0)),
-        has_reset_state=False,
-    )
+    GridWorld:
+    ==========
+    time: 0
+    origin: Origin([0])(shape=(1, 1))
+    areas:
+        [1] Area(shape=(2, 2))
+        [2] Area(shape=(2, 2))
+        [3] Area(shape=(2, 2))
+        [4] Area(shape=(5, 5))
+    inter-area connections:
+        (0, 0, 0) + (1, 0) -> (1, 0, 0)
+        (0, 0, 0) + (-1, 0) -> (2, 1, 1)
+        (1, 0, 1) + (-1, 0) -> (3, 1, 1)
+        (2, 0, 0) + (-1, 0) -> (3, 1, 0)
+        (3, 1, 1) + (0, 1) -> (4, 0, 0)
+    objects:
+        [0] Object(reward=1, punish=0, prob=0.7, coord=(1, 1, 1))
+        [1] Object(reward=1, punish=-1, prob=0.3, coord=(2, 0, 1))
+        [2] Object(reward=99, punish=0, prob=0.9, coord=(4, 1, 1))
+    actions: ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
+    agent: None
+    has_reset_state: False
+    ==========
 
 You can get the value of the object attribute by:
 
