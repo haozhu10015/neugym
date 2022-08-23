@@ -43,6 +43,7 @@ Then enter::
 
     $ git clone https://github.com/HaoZhu10015/neugym.git
     $ cd neugym
+    $ pip install -r requirements.txt
     $ pip install -e .
 
 If you want to update NeuGym at any time, in the same directory do::

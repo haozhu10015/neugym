@@ -107,6 +107,13 @@ It is even possible to further register a certain action for this path.
       transport the agent from state ``(0, 0, 0)`` to state ``(1, 0, 0)``, then action
       **DOWN(-1, 0)** must be able to transport the agent from state ``(1, 0, 0)`` to
       state ``(0, 0, 0)``. When adding a new area, both of these two paths will be generated.
+      This rule will need to be paid attention to when trying to add areas with default
+      arguments (i.e. ``W.add_area((x, y))`` with ``x > 1`` and ``y > 1``).
+      For the first and second area, the inter-area path will be generated from the world
+      origin ``(0, 0, 0)`` to the origin of each area and with action ``(1, 0)`` and
+      ``(0, 1)`` registered, respectively. Then you will not be able to use the same
+      expression to add a third area from the origin since all possible action is now
+      allocated. You will need to manually specify the ``access_to`` arguments under this case.
     - If the action to register is not manually set, then the first allowed path will be
       searched and set in the following order: **UP(1, 0)** -> **DOWN(-1, 0)** -> **RIGHT(0, 1)** ->
       **LEFT(0, -1)**.
