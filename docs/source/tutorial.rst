@@ -57,7 +57,7 @@ Add one area of shape ``(2, 2)``.
     time: 0
     origin: Origin([0])(shape=(1, 1))
     areas:
-        [1] Area(shape=(2, 2))
+        [1][] Area(shape=(2, 2))
     inter-area connections:
         (0, 0, 0) + (1, 0) -> (1, 0, 0)
     objects: None
@@ -72,19 +72,44 @@ with the gridworld origin ``(0, 0, 0)``. One can also manually specify the start
     >>> W.add_area((2, 2), access_from=(0, 0, 0), access_to=(1, 1))
 
 It is even possible to further register a certain action for this path.
+And you can also set a alias name for an area when adding it.
 
     >>> W.add_area((2, 2),
     ...            access_from=(1, 0, 1), access_to=(1, 1),
-    ...            register_action=(-1, 0))
+    ...            register_action=(-1, 0), name="ThirdArea")
     >>> print(W)
     GridWorld:
     ==========
     time: 0
     origin: Origin([0])(shape=(1, 1))
     areas:
-        [1] Area(shape=(2, 2))
-        [2] Area(shape=(2, 2))
-        [3] Area(shape=(2, 2))
+        [1][] Area(shape=(2, 2))
+        [2][] Area(shape=(2, 2))
+        [3][ThirdArea] Area(shape=(2, 2))
+    inter-area connections:
+        (0, 0, 0) + (1, 0) -> (1, 0, 0)
+        (0, 0, 0) + (-1, 0) -> (2, 1, 1)
+        (1, 0, 1) + (-1, 0) -> (3, 1, 1)
+    objects: None
+    actions: ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
+    agent: None
+    has_reset_state: False
+    ==========
+
+If you want to set a alias name for an exist area, you can use
+``W.set_area_name`` function.
+
+    >>> W.set_area_name(1, "FirstArea")
+    >>> W.set_area_name(2, "SecondArea")
+    >>> print(W)
+    GridWorld:
+    ==========
+    time: 0
+    origin: Origin([0])(shape=(1, 1))
+    areas:
+        [1][FirstArea] Area(shape=(2, 2))
+        [2][SecondArea] Area(shape=(2, 2))
+        [3][ThirdArea] Area(shape=(2, 2))
     inter-area connections:
         (0, 0, 0) + (1, 0) -> (1, 0, 0)
         (0, 0, 0) + (-1, 0) -> (2, 1, 1)
@@ -125,7 +150,7 @@ At any time, you can get the number of areas (without the origin) of the world w
 
 To get the shape of an area, you can use:
 
-    >>> W.get_area_shape(area_idx=1)
+    >>> W.get_area_shape(area=1)
     (2, 2)
 
 Besides, the states and paths of the world are represented by a NetworkX ``Graph`` object.
@@ -154,9 +179,9 @@ state coordinate to place the object for the first parameter:
     time: 0
     origin: Origin([0])(shape=(1, 1))
     areas:
-        [1] Area(shape=(2, 2))
-        [2] Area(shape=(2, 2))
-        [3] Area(shape=(2, 2))
+        [1][FirstArea] Area(shape=(2, 2))
+        [2][SecondArea] Area(shape=(2, 2))
+        [3][ThirdArea] Area(shape=(2, 2))
     inter-area connections:
         (0, 0, 0) + (1, 0) -> (1, 0, 0)
         (0, 0, 0) + (-1, 0) -> (2, 1, 1)
@@ -208,7 +233,7 @@ set the altitude for all states in an area at the same time.
     >>> import numpy as np
     >>> np.random.seed(10015)
     >>> altitude_mat = np.random.randn(2, 2)
-    >>> W.set_altitude(area_idx=1, altitude_mat=altitude_mat)
+    >>> W.set_altitude(area=1, altitude_mat=altitude_mat)
 
     .. note::
         - The shape of ``altitude_mat`` should be the same as the shape of area with
@@ -220,7 +245,7 @@ set the altitude for all states in an area at the same time.
 
 You can have a look on the altitude of all states in an area with:
 
-    >>> W.get_area_altitude(area_idx=1)
+    >>> W.get_area_altitude(area=1)
     array([[-0.96776909,  0.35446728],
            [ 0.75243532,  1.42340557]])
 
@@ -242,10 +267,10 @@ For demonstration, we will first add a new area and an extra path.
     time: 0
     origin: Origin([0])(shape=(1, 1))
     areas:
-        [1] Area(shape=(2, 2))
-        [2] Area(shape=(2, 2))
-        [3] Area(shape=(2, 2))
-        [4] Area(shape=(5, 5))
+        [1][FirstArea] Area(shape=(2, 2))
+        [2][SecondArea] Area(shape=(2, 2))
+        [3][ThirdArea] Area(shape=(2, 2))
+        [4][] Area(shape=(5, 5))
     inter-area connections:
         (0, 0, 0) + (1, 0) -> (1, 0, 0)
         (0, 0, 0) + (-1, 0) -> (2, 1, 1)
@@ -260,10 +285,9 @@ For demonstration, we will first add a new area and an extra path.
     has_reset_state: False
     ==========
 
-
 To remove the new-added area:
 
-    >>> W.remove_area(area_idx=4)
+    >>> W.remove_area(area=4)
 
 .. note::
     - When removing one area will result in the separate of
@@ -304,10 +328,10 @@ For this demonstration we will first add some new objects to ``Area[4]``.
     time: 0
     origin: Origin([0])(shape=(1, 1))
     areas:
-        [1] Area(shape=(2, 2))
-        [2] Area(shape=(2, 2))
-        [3] Area(shape=(2, 2))
-        [4] Area(shape=(5, 5))
+        [1][FirstArea] Area(shape=(2, 2))
+        [2][SecondArea] Area(shape=(2, 2))
+        [3][ThirdArea] Area(shape=(2, 2))
+        [4][] Area(shape=(5, 5))
     inter-area connections:
         (0, 0, 0) + (1, 0) -> (1, 0, 0)
         (0, 0, 0) + (-1, 0) -> (2, 1, 1)
@@ -338,10 +362,10 @@ To update the configuration of an object, you can use the ``update_object`` func
     time: 0
     origin: Origin([0])(shape=(1, 1))
     areas:
-        [1] Area(shape=(2, 2))
-        [2] Area(shape=(2, 2))
-        [3] Area(shape=(2, 2))
-        [4] Area(shape=(5, 5))
+        [1][FirstArea] Area(shape=(2, 2))
+        [2][SecondArea] Area(shape=(2, 2))
+        [3][ThirdArea] Area(shape=(2, 2))
+        [4][] Area(shape=(5, 5))
     inter-area connections:
         (0, 0, 0) + (1, 0) -> (1, 0, 0)
         (0, 0, 0) + (-1, 0) -> (2, 1, 1)

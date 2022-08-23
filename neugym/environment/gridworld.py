@@ -1272,7 +1272,12 @@ class GridWorld:
         else:
             msg += "areas: \n"
             for i in range(1, self._num_area + 1):
-                msg += "\t[{}] Area(shape={})\n".format(i, self.get_area_shape(i))
+                alias = ""
+                for key, value in self._area_alias.items():
+                    if value == i:
+                        alias = key
+                        break
+                msg += "\t[{}][{}] Area(shape={})\n".format(i, alias, self.get_area_shape(i))
 
         if len(self._path_alias) == 0:
             msg += "inter-area connections: None\n"
