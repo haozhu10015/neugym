@@ -24,6 +24,7 @@ Configuring the environment
     GridWorld.__init__
     GridWorld.add_area
     GridWorld.remove_area
+    GridWorld.set_area_name
     GridWorld.add_path
     GridWorld.remove_path
     GridWorld.add_object
@@ -45,6 +46,8 @@ Get environment information
     GridWorld.num_area
     GridWorld.actions
     GridWorld.has_reset_checkpoint
+    GridWorld.get_area_name
+    GridWorld.get_area_index
     GridWorld.get_area_shape
     GridWorld.get_area_altitude
     GridWorld.get_object_attribute

@@ -74,12 +74,6 @@ class GridWorld:
         initialized to be only one state (0, 0, 0), otherwise it will
         be a rectangular area of shape ``origin_shape``.
 
-    See Also
-    --------
-    DelayedRewardGridWorld
-    TimeLimitedGridWorld
-
-
     Examples
     --------
     Initialize a gridworld environment with only an origin state.
@@ -204,7 +198,8 @@ class GridWorld:
         origin_altitude_mat = np.zeros(origin_shape)
         self.set_altitude(0, origin_altitude_mat)
 
-        self._alias = {}
+        self._area_alias = {}
+        self._path_alias = {}
         self._objects = []
         self._actions = ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
 
@@ -217,12 +212,12 @@ class GridWorld:
             "world": None,
             "time": None,
             "num_area": None,
-            "alias": None,
+            "path_alias": None,
             "objects": None,
             "agent": None
         }
 
-    def add_area(self, shape,
+    def add_area(self, shape, name=None,
                  access_from=None, access_to=None,
                  register_action=None):
         """Add a new area to the world.
@@ -238,6 +233,9 @@ class GridWorld:
         ----------
         shape : tuple of ints
             Shape of the new area.
+
+        name : str (optional, default: None)
+            Alias name of the area to be added.
 
         access_from : tuple of ints (optional, default: None)
             Coordinate of one state in the world that the new area will
@@ -258,7 +256,7 @@ class GridWorld:
         --------
         >>> W = GridWorld()
         >>> W.add_area((2, 3))
-        >>> W.add_area((2, 2))
+        >>> W.add_area((2, 2), name="Right")
         >>> W.add_area((3, 3), access_from=(1, 1, 2))
         >>> W.add_area((4, 4), access_from=(0, 0, 0), access_to=(3, 3))
         >>> W.add_area((2, 2),
@@ -281,6 +279,10 @@ class GridWorld:
             raise ValueError(msg)
         access_to = tuple([self._num_area + 1] + list(access_to))
 
+        if name in self._area_alias.keys():
+            msg = "Alias name already exists, try another name"
+            raise RuntimeError(msg)
+
         # Create checkpoint for rollback.
         world_backup = copy.deepcopy(self._world)
 
@@ -294,6 +296,8 @@ class GridWorld:
 
         self._world.update(new_area)
         self._num_area += 1
+        if name is not None:
+            self._area_alias[name] = self._num_area
 
         # Add inter-area connections and altitude.
         altitude_mat = np.zeros(shape)
@@ -303,9 +307,11 @@ class GridWorld:
         except Exception:
             self._world = world_backup
             self._num_area -= 1
+            if name is not None:
+                self._area_alias.pop(name)
             raise
 
-    def remove_area(self, area_idx):
+    def remove_area(self, area):
         """Remove an area from the world.
 
         Index for all other areas left will be automatically reset.
@@ -319,16 +325,26 @@ class GridWorld:
 
         Parameters
         ----------
-        area_idx : int
-            Index of the area to be removed.
+        area : int or str
+            Index or name of the area to be removed.
 
         Examples
         --------
         >>> W = GridWorld()
         >>> W.add_area((2, 2))
         >>> W.remove_area(1)
+        >>> W.add_area((2, 2), name="example")
+        >>> W.remove_area("example")
         """
         new_world = copy.deepcopy(self._world)
+        if type(area) == str:
+            area_idx = self.get_area_index(area)
+        elif type(area) == int:
+            area_idx = area
+        else:
+            msg = "int for area index or str for area name " \
+                  "expected, got '{}'".format(type(area))
+            raise TypeError(msg)
         if area_idx == 0:
             raise ng.NeuGymPermissionError("Not allowed to remove origin area")
 
@@ -349,9 +365,21 @@ class GridWorld:
         self._world = new_world
         self._num_area -= 1
 
-        # Remove invalid alias.
-        new_alias = {}
-        for key, value in self._alias.items():
+        # Remove invalid area alias.
+        new_area_alias = {}
+        for key, value in self._area_alias.items():
+            if value == area_idx:
+                continue
+            elif value > area_idx:
+                new_area_alias[key] = value - 1
+            else:
+                new_area_alias[key] = value
+
+        self._area_alias = new_area_alias
+
+        # Remove invalid path alias.
+        new_path_alias = {}
+        for key, value in self._path_alias.items():
             if key[0] == area_idx:
                 continue
             elif key[0] > area_idx:
@@ -365,9 +393,9 @@ class GridWorld:
                 new_value = tuple([value[0] - 1] + list(value[1:]))
             else:
                 new_value = value
-            new_alias[new_key] = new_value
+            new_path_alias[new_key] = new_value
 
-        self._alias = new_alias
+        self._path_alias = new_path_alias
 
         # Remove objects in the area to be removed.
         new_objects = []
@@ -450,7 +478,7 @@ class GridWorld:
             alias_to = tuple([coord_from[0]] + [coord_from[1] + dx] + [coord_from[2] + dy])
             alias_from = tuple([coord_to[0]] + [coord_to[1] - dx] + [coord_to[2] - dy])
             if self._world.has_node(alias_to) or self._world.has_node(alias_from) or \
-                    alias_to in self._alias.keys() or alias_from in self._alias.keys():
+                    alias_to in self._path_alias.keys() or alias_from in self._path_alias.keys():
                 continue
             free_actions.append(action)
 
@@ -473,12 +501,12 @@ class GridWorld:
             dx, dy = free_actions[0]
 
         # Register action.
-        self._alias[tuple([coord_from[0]] +
-                          [coord_from[1] + dx] +
-                          [coord_from[2] + dy])] = coord_to
-        self._alias[tuple([coord_to[0]] +
-                          [coord_to[1] - dx] +
-                          [coord_to[2] - dy])] = coord_from
+        self._path_alias[tuple([coord_from[0]] +
+                               [coord_from[1] + dx] +
+                               [coord_from[2] + dy])] = coord_to
+        self._path_alias[tuple([coord_to[0]] +
+                               [coord_to[1] - dx] +
+                               [coord_to[2] - dy])] = coord_from
         self._world.add_edge(coord_from, coord_to)
 
     def remove_path(self, coord_from, coord_to):
@@ -528,8 +556,8 @@ class GridWorld:
                                [coord_to[1] - dx] +
                                [coord_to[2] - dy])
 
-            if self._alias.get(alias_to) == coord_to and \
-                    self._alias.get(alias_from) == coord_from:
+            if self._path_alias.get(alias_to) == coord_to and \
+                    self._path_alias.get(alias_from) == coord_from:
                 remove_list.append(alias_to)
                 remove_list.append(alias_from)
 
@@ -540,7 +568,7 @@ class GridWorld:
         else:
             assert len(remove_list) == 2
             for key in remove_list:
-                self._alias.pop(key)
+                self._path_alias.pop(key)
             self._world.remove_edge(coord_from, coord_to)
 
     def add_object(self, coord, reward, prob, punish=0):
@@ -676,13 +704,13 @@ class GridWorld:
         msg = "No object found at {}".format(coord)
         raise ValueError(msg)
 
-    def set_altitude(self, area_idx, altitude_mat):
+    def set_altitude(self, area, altitude_mat):
         """Set the altitude of each state for one area.
 
         Parameters
         ----------
-        area_idx : int
-            Index of the area to set altitude.
+        area : int or str
+            Index or name of the area to set altitude.
 
         altitude_mat : numpy.ndarray
             An matrix of the same shape as the area.
@@ -695,8 +723,19 @@ class GridWorld:
         >>> W.add_area((2, 3))
         >>> mat = np.random.randn(2, 3)
         >>> W.set_altitude(1, altitude_mat=mat)
+        >>> W.add_area((2, 3), name="Right")
+        >>> W.set_altitude("Right", altitude_mat=mat)
         """
-        if area_idx > self._num_area:
+        if type(area) == str:
+            area_idx = self.get_area_index(area)
+        elif type(area) == int:
+            area_idx = area
+        else:
+            msg = "int for area index or str for area name " \
+                  "expected, got '{}'".format(type(area))
+            raise TypeError(msg)
+
+        if area_idx > self._num_area or area_idx < 0:
             msg = "Area {} not found".format(area_idx)
             raise ValueError(msg)
 
@@ -717,13 +756,107 @@ class GridWorld:
                 altitude_mapping[coord] = altitude_mat[x, y]
         nx.set_node_attributes(self._world, altitude_mapping, 'altitude')
 
-    def get_area_shape(self, area_idx):
-        """Get the shape of one area.
+    def set_area_name(self, area, name):
+        """Set an alias name for an area.
+
+        Can be used to reset the alias name of an area.
+
+        Parameters
+        ----------
+        area : int or str
+            Index or name of the area to set name.
+        name : str
+            Name of the area to be set.
+
+        Examples
+        --------
+        >>> W = GridWorld()
+        >>> W.add_area((2, 2))
+        >>> W.set_area_name(1, "Up")
+        """
+        if name in self._area_alias.keys():
+            msg = "Alias name already exists, try another name"
+            raise RuntimeError(msg)
+        if type(area) == str:
+            area_idx = self.get_area_index(area)
+            self._area_alias[name] = area_idx
+            self._area_alias.pop(area)
+        elif type(area) == int:
+            if area > self._num_area or area < 0:
+                msg = "Area with index '{}' not found".format(area)
+                raise ValueError(msg)
+            else:
+                try:
+                    old_name = self.get_area_name(area)
+                except ValueError:
+                    pass
+                else:
+                    self._area_alias.pop(old_name)
+                self._area_alias[name] = area
+        else:
+            msg = "int for area index or str for area name " \
+                  "expected to find the area, got '{}'".format(type(area))
+            raise TypeError(msg)
+
+    def get_area_name(self, area_idx):
+        """Get the alias name of an area using area index.
 
         Parameters
         ----------
         area_idx : int
-            Index of the area to get its shape.
+            Index of the area to get name.
+
+        Returns
+        -------
+        name : str
+            Name of the area with index ``area_idx``.
+
+        Examples
+        --------
+        >>> W = GridWorld()
+        >>> W.add_area((2, 2), name="Up")
+        >>> W.get_area_name(1)
+        Up
+        """
+        for key, value in self._area_alias.items():
+            if value == area_idx:
+                return key
+        msg = "Area with index '{}' not found".format(area_idx)
+        raise ValueError(msg)
+
+    def get_area_index(self, area_name):
+        """Get the index of an area with its alias name.
+
+        Parameters
+        ----------
+        area_name : str
+            Name of the area to get index.
+
+        Returns
+        -------
+        index : int
+            Index of the area with alias name ``area_name``.
+
+        Examples
+        --------
+        >>> W = GridWorld()
+        >>> W.add_area((2, 2), name="Up")
+        >>> W.get_area_index("Up")
+        1
+        """
+        for key, value in self._area_alias.items():
+            if key == area_name:
+                return value
+        msg = "Area with name '{}' not found".format(area_name)
+        raise ValueError(msg)
+
+    def get_area_shape(self, area):
+        """Get the shape of one area.
+
+        Parameters
+        ----------
+        area : int or str
+            Index or name of the area to get its shape.
 
         Returns
         -------
@@ -736,8 +869,20 @@ class GridWorld:
         >>> W.add_area((3, 10))
         >>> W.get_area_shape(1)
         (3, 10)
+        >>> W.add_area((5, 10), name="Right")
+        >>> W.get_area_shape("Right")
+        (5, 10)
         """
-        if area_idx > self._num_area:
+        if type(area) == str:
+            area_idx = self.get_area_index(area)
+        elif type(area) == int:
+            area_idx = area
+        else:
+            msg = "int for area index or str for area name " \
+                  "expected, got '{}'".format(type(area))
+            raise TypeError(msg)
+
+        if area_idx > self._num_area or area_idx < 0:
             msg = "Area {} not found".format(area_idx)
             raise ValueError(msg)
 
@@ -753,13 +898,13 @@ class GridWorld:
                     max_y = y
         return max_x + 1, max_y + 1
 
-    def get_area_altitude(self, area_idx):
+    def get_area_altitude(self, area):
         """Get the altitude of each state in one area.
 
         Parameters
         ----------
-        area_idx : int
-            Index of the area to get its state altitude.
+        area : int or str
+            Index or name of the area to get its state altitude.
 
         Returns
         -------
@@ -772,14 +917,28 @@ class GridWorld:
         --------
         >>> W = GridWorld()
         >>> W.add_area((3, 5))
+        >>> W.add_area((3, 5), name="Right")
         >>> mat = np.ones((3, 5))
         >>> W.set_altitude(1, altitude_mat=mat)
         >>> W.get_area_altitude(1)
         array([[1., 1., 1., 1., 1.],
                [1., 1., 1., 1., 1.],
                [1., 1., 1., 1., 1.]])
+        >>> W.get_area_altitude("Right")
+        array([[0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0.],
+               [0., 0., 0., 0., 0.]])
         """
-        if area_idx > self._num_area:
+        if type(area) == str:
+            area_idx = self.get_area_index(area)
+        elif type(area) == int:
+            area_idx = area
+        else:
+            msg = "int for area index or str for area name " \
+                  "expected, got '{}'".format(type(area))
+            raise TypeError(msg)
+
+        if area_idx > self._num_area or area_idx < 0:
             msg = "Area {} not found".format(area_idx)
             raise ValueError(msg)
 
@@ -1032,8 +1191,8 @@ class GridWorld:
         current_state = self._agent.current_state
         next_state = (current_state[0], current_state[1] + dx, current_state[2] + dy)
         if not self._world.has_node(next_state):
-            if next_state in self._alias.keys():
-                next_state = self._alias[next_state]
+            if next_state in self._path_alias.keys():
+                next_state = self._path_alias[next_state]
             else:
                 next_state = current_state
 
@@ -1115,7 +1274,7 @@ class GridWorld:
             for i in range(1, self._num_area + 1):
                 msg += "\t[{}] Area(shape={})\n".format(i, self.get_area_shape(i))
 
-        if len(self._alias) == 0:
+        if len(self._path_alias) == 0:
             msg += "inter-area connections: None\n"
         else:
             msg += "inter-area connections:\n"
@@ -1127,7 +1286,7 @@ class GridWorld:
                         dx, dy = a
                         alias = tuple([u[0]] + [u[1] + dx] + [u[2] + dy])
                         try:
-                            if self._alias[alias] == v:
+                            if self._path_alias[alias] == v:
                                 msg += "\t{} + {} -> {}\n".format(u, a, v)
                         except KeyError:
                             continue
