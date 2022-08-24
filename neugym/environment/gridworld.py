@@ -1309,3 +1309,67 @@ class GridWorld:
         msg += "".join(["=" for _ in range(10)])
 
         return msg
+
+    def draw(self, filename, dpi=600):
+        import matplotlib.pyplot as plt
+
+        num_colum = int(np.sqrt(self.num_area + 1)) + 1
+        num_row = num_colum
+        figsize = (4 * num_colum, 4 * num_row)
+        vmin = min(nx.get_node_attributes(self.world, "altitude").values())
+        vmax = max(nx.get_node_attributes(self.world, "altitude").values())
+
+        fig, axs = plt.subplots(num_row, num_colum, figsize=figsize)
+        for area_idx in range(self.num_area + 1):
+            shape = self.get_area_shape(area_idx)
+
+            if num_row == 1 or num_colum == 1:
+                ax_idx = area_idx
+                ax = axs[ax_idx]
+            else:
+                row_idx = area_idx // num_colum
+                column_idx = area_idx % num_colum
+                ax = axs[row_idx][column_idx]
+
+            if area_idx == 0:
+                title = "Origin"
+            else:
+                title = "Area[{}]".format(area_idx)
+                try:
+                    alias = self.get_area_name(area_idx)
+                except ValueError:
+                    pass
+                else:
+                    title += "({})".format(alias)
+
+            mat = self.get_area_altitude(area_idx)
+            ax.matshow(mat, cmap='Blues',
+                       vmin=vmin, vmax=vmax)
+            ax.set_title(title)
+
+            for x in range(shape[0]):
+                for y in range(shape[1]):
+                    coord = (area_idx, x, y)
+                    altitude = mat[x, y]
+                    ax.annotate("{}\n{}".format(
+                        coord, np.around(altitude, decimals=2)),
+                        (x, y), horizontalalignment='center', verticalalignment='bottom')
+
+                    for action in self.actions:
+                        dx, dy = action
+                        alias = (area_idx, x + dx, y + dy)
+                        try:
+                            next_state = self._path_alias[alias]
+                        except KeyError:
+                            continue
+
+                        ax.plot((x, alias[1]), (y, alias[2]),
+                                color='r', linewidth=3, linestyle=':')
+                        ax.annotate("{}".format(
+                            next_state),
+                            (alias[1], alias[2]),
+                            horizontalalignment='center', verticalalignment='bottom')
+            ax.axis('off')
+        plt.axis('off')
+        plt.tight_layout()
+        plt.savefig(filename, dpi=dpi)
