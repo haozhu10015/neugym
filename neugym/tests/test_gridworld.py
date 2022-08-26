@@ -450,13 +450,5 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertTrue("Right" not in W._area_alias.keys())
 
 
-class TestGridWorldRun(unittest.TestCase):
-    def test_build_simple_task(self):
-        pass
-
-    def test_build_gridworld(self):
-        pass
-
-
 if __name__ == '__main__':
     unittest.main()

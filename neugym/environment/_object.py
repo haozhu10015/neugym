@@ -21,11 +21,3 @@ class _Object:
             self.prob,
             self.coord
         )
-
-
-class _RewardPool:
-    def __init__(self, coord):
-        self.coord: float = coord
-
-    def __repr__(self):
-        return "RewardPool(coord={})".format(self.coord)
