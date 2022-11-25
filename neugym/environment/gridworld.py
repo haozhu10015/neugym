@@ -182,6 +182,10 @@ class GridWorld:
         self._world = nx.Graph()
         self._time = 0
         self._num_area = 0
+        self._area_alias = {}
+        self._path_alias = {}
+        self._objects = []
+        self._actions = ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
 
         # Add origin.
         if origin_shape is None:
@@ -196,12 +200,8 @@ class GridWorld:
             origin = nx.relabel_nodes(origin, mapping)
             self._world.update(origin)
         origin_altitude_mat = np.zeros(origin_shape)
+        self.set_area_name(0, 'origin')
         self.set_altitude(0, origin_altitude_mat)
-
-        self._area_alias = {}
-        self._path_alias = {}
-        self._objects = []
-        self._actions = ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
 
         # Agent.
         self._agent = None
@@ -212,6 +212,7 @@ class GridWorld:
             "world": None,
             "time": None,
             "num_area": None,
+            "area_alias": None,
             "path_alias": None,
             "objects": None,
             "agent": None
@@ -788,7 +789,7 @@ class GridWorld:
             else:
                 try:
                     old_name = self.get_area_name(area)
-                except ValueError:
+                except RuntimeError:
                     pass
                 else:
                     self._area_alias.pop(old_name)
@@ -818,11 +819,16 @@ class GridWorld:
         >>> W.get_area_name(1)
         Up
         """
+        if area_idx > self._num_area:
+            msg = "Area index '{}' out of range".format(area_idx)
+            raise ValueError(msg)
+
         for key, value in self._area_alias.items():
             if value == area_idx:
                 return key
-        msg = "Area with index '{}' not found".format(area_idx)
-        raise ValueError(msg)
+
+        msg = "Area with index '{}' don't have an alias name".format(area_idx)
+        raise RuntimeError(msg)
 
     def get_area_index(self, area_name):
         """Get the index of an area with its alias name.
@@ -1264,20 +1270,16 @@ class GridWorld:
         msg = "GridWorld:\n"
         msg += "".join(["=" for _ in range(10)])
         msg += "\n"
-        msg += "time: {}\n" \
-               "origin: Origin([0])(shape={})\n".format(self._time, self.get_area_shape(0))
+        msg += "time: {}\n".format(self.time)
 
-        if self._num_area == 0:
-            msg += "areas: None\n"
-        else:
-            msg += "areas: \n"
-            for i in range(1, self._num_area + 1):
-                alias = ""
-                for key, value in self._area_alias.items():
-                    if value == i:
-                        alias = key
-                        break
-                msg += "\t[{}][{}] Area(shape={})\n".format(i, alias, self.get_area_shape(i))
+        msg += "areas: \n"
+        for i in range(self._num_area + 1):
+            alias = ""
+            for key, value in self._area_alias.items():
+                if value == i:
+                    alias = key
+                    break
+            msg += "\t[{}][{}] Area(shape={})\n".format(i, alias, self.get_area_shape(i))
 
         if len(self._path_alias) == 0:
             msg += "inter-area connections: None\n"
@@ -1309,67 +1311,3 @@ class GridWorld:
         msg += "".join(["=" for _ in range(10)])
 
         return msg
-
-    def draw(self, filename, dpi=600):
-        import matplotlib.pyplot as plt
-
-        num_colum = int(np.sqrt(self.num_area + 1)) + 1
-        num_row = num_colum
-        figsize = (4 * num_colum, 4 * num_row)
-        vmin = min(nx.get_node_attributes(self.world, "altitude").values())
-        vmax = max(nx.get_node_attributes(self.world, "altitude").values())
-
-        fig, axs = plt.subplots(num_row, num_colum, figsize=figsize)
-        for area_idx in range(self.num_area + 1):
-            shape = self.get_area_shape(area_idx)
-
-            if num_row == 1 or num_colum == 1:
-                ax_idx = area_idx
-                ax = axs[ax_idx]
-            else:
-                row_idx = area_idx // num_colum
-                column_idx = area_idx % num_colum
-                ax = axs[row_idx][column_idx]
-
-            if area_idx == 0:
-                title = "Origin"
-            else:
-                title = "Area[{}]".format(area_idx)
-                try:
-                    alias = self.get_area_name(area_idx)
-                except ValueError:
-                    pass
-                else:
-                    title += "({})".format(alias)
-
-            mat = self.get_area_altitude(area_idx)
-            ax.matshow(mat, cmap='Blues',
-                       vmin=vmin, vmax=vmax)
-            ax.set_title(title)
-
-            for x in range(shape[0]):
-                for y in range(shape[1]):
-                    coord = (area_idx, x, y)
-                    altitude = mat[x, y]
-                    ax.annotate("{}\n{}".format(
-                        coord, np.around(altitude, decimals=2)),
-                        (x, y), horizontalalignment='center', verticalalignment='bottom')
-
-                    for action in self.actions:
-                        dx, dy = action
-                        alias = (area_idx, x + dx, y + dy)
-                        try:
-                            next_state = self._path_alias[alias]
-                        except KeyError:
-                            continue
-
-                        ax.plot((x, alias[1]), (y, alias[2]),
-                                color='r', linewidth=3, linestyle=':')
-                        ax.annotate("{}".format(
-                            next_state),
-                            (alias[1], alias[2]),
-                            horizontalalignment='center', verticalalignment='bottom')
-            ax.axis('off')
-        plt.axis('off')
-        plt.tight_layout()
-        plt.savefig(filename, dpi=dpi)
