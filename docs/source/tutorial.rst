@@ -12,6 +12,7 @@ Creating a world
 ================
 
 Create a gridworld environment with only an one-state origin.
+The origin area will be marked as Area[0] and automatically given a alias name "origin".
 
     >>> import neugym as ng
     >>> import neugym.environment as env
@@ -21,8 +22,8 @@ Create a gridworld environment with only an one-state origin.
     GridWorld:
     ==========
     time: 0
-    origin: Origin([0])(shape=(1, 1))
-    areas: None
+    areas:
+        [0][origin] Area(shape=(1, 1))
     inter-area connections: None
     objects: None
     actions: ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
@@ -55,8 +56,8 @@ Add one area of shape ``(2, 2)``.
     GridWorld:
     ==========
     time: 0
-    origin: Origin([0])(shape=(1, 1))
     areas:
+        [0][origin] Area(shape=(1, 1))
         [1][] Area(shape=(2, 2))
     inter-area connections:
         (0, 0, 0) + (1, 0) -> (1, 0, 0)
@@ -81,8 +82,8 @@ And you can also set a alias name for an area when adding it.
     GridWorld:
     ==========
     time: 0
-    origin: Origin([0])(shape=(1, 1))
     areas:
+        [0][origin] Area(shape=(1, 1))
         [1][] Area(shape=(2, 2))
         [2][] Area(shape=(2, 2))
         [3][ThirdArea] Area(shape=(2, 2))
@@ -105,8 +106,8 @@ If you want to set a alias name for an exist area, you can use
     GridWorld:
     ==========
     time: 0
-    origin: Origin([0])(shape=(1, 1))
     areas:
+        [0][origin] Area(shape=(1, 1))
         [1][FirstArea] Area(shape=(2, 2))
         [2][SecondArea] Area(shape=(2, 2))
         [3][ThirdArea] Area(shape=(2, 2))
@@ -177,8 +178,8 @@ state coordinate to place the object for the first parameter:
     GridWorld:
     ==========
     time: 0
-    origin: Origin([0])(shape=(1, 1))
     areas:
+        [0][origin] Area(shape=(1, 1))
         [1][FirstArea] Area(shape=(2, 2))
         [2][SecondArea] Area(shape=(2, 2))
         [3][ThirdArea] Area(shape=(2, 2))
@@ -265,8 +266,8 @@ For demonstration, we will first add a new area and an extra path.
     GridWorld:
     ==========
     time: 0
-    origin: Origin([0])(shape=(1, 1))
     areas:
+        [0][origin] Area(shape=(1, 1))
         [1][FirstArea] Area(shape=(2, 2))
         [2][SecondArea] Area(shape=(2, 2))
         [3][ThirdArea] Area(shape=(2, 2))
@@ -326,8 +327,8 @@ For this demonstration we will first add some new objects to ``Area[4]``.
     GridWorld:
     ==========
     time: 0
-    origin: Origin([0])(shape=(1, 1))
     areas:
+        [0][origin] Area(shape=(1, 1))
         [1][FirstArea] Area(shape=(2, 2))
         [2][SecondArea] Area(shape=(2, 2))
         [3][ThirdArea] Area(shape=(2, 2))
@@ -360,8 +361,8 @@ To update the configuration of an object, you can use the ``update_object`` func
     GridWorld:
     ==========
     time: 0
-    origin: Origin([0])(shape=(1, 1))
     areas:
+        [0][origin] Area(shape=(1, 1))
         [1][FirstArea] Area(shape=(2, 2))
         [2][SecondArea] Area(shape=(2, 2))
         [3][ThirdArea] Area(shape=(2, 2))
