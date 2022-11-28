@@ -16,9 +16,8 @@ Saving and loading environment
 Drawing
 =======
 
-NeuGym provides basic functionality for visualizing the area
-connections of environments, but it is hard to provide a general
-proper visualization especially when the environment is large and
+It is hard to provide a proper environment visualization
+especially when the environment is large and
 complex. The aim of these functions is to provide a convenient
 and fast check of environment structure. For a more thorough and
 beautiful visualization, people can use graph visualization tools
@@ -40,4 +39,5 @@ built-in features for graph visualization.
 .. autosummary::
     :toctree: generated/
 
-    show
+    show_area_connection
+    show_area
