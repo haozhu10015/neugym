@@ -73,7 +73,7 @@ def show(env, layout='spring'):
     ----------
     env : environment object
         NeuGym environment object.
-    layout : str {"circular", "spring", "shell", "spectral"} (optional, default: "circular")
+    layout : str {"circular", "spring", "shell", "spectral"} (default: "circular")
         Layout with which to show the area connections.
 
     Examples
