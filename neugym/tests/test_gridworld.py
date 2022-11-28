@@ -450,6 +450,7 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertEqual(W.get_area_index("NewRight"), 2)
         self.assertTrue("Right" not in W._area_alias.keys())
 
+
     def test_block_state(self):
         # Test block and unblock state.
         W = GridWorld()
@@ -480,7 +481,7 @@ class TestGridWorldFunction(unittest.TestCase):
         W.unblock((1, 0, 0))
         next_state, *_ = W.step((1, 0))
         self.assertEqual(next_state, (1, 0, 0))
-
+    
 
 if __name__ == '__main__':
     unittest.main()
