@@ -31,6 +31,8 @@ Configuring the environment
     GridWorld.remove_object
     GridWorld.update_object
     GridWorld.set_altitude
+    GridWorld.block
+    GridWorld.unblock
     GridWorld.init_agent
     GridWorld.set_reset_checkpoint
     GridWorld.reset
