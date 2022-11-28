@@ -1,3 +1,4 @@
+import networkx as nx
 import pytest
 import unittest
 
@@ -448,6 +449,37 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertEqual(W.get_area_name(2), "NewRight")
         self.assertEqual(W.get_area_index("NewRight"), 2)
         self.assertTrue("Right" not in W._area_alias.keys())
+
+    def test_block_state(self):
+        # Test block and unblock state.
+        W = GridWorld()
+        W.add_area((2, 2))
+        with self.assertRaises(ValueError):
+            W.block((3, 3, 3))
+        with self.assertRaises(ValueError):
+            W.unblock((3, 3, 3))
+        test_coord = (1, 1, 1)
+        W.block(test_coord)
+        self.assertTrue(nx.get_node_attributes(W.world, 'blocked')[test_coord])
+        W.unblock(test_coord)
+        self.assertTrue(not nx.get_node_attributes(W.world, 'blocked')[test_coord])
+
+        # Test agent behavior.
+        W = GridWorld()
+        W.add_area((1, 1))
+        W.block((0, 0, 0))
+        with self.assertRaises(RuntimeError):
+            W.init_agent()
+        W.unblock((0, 0, 0))
+        W.init_agent()
+        with self.assertRaises(RuntimeError):
+            W.block((0, 0, 0))
+        W.block((1, 0, 0))
+        next_state, *_ = W.step((1, 0))
+        self.assertEqual(next_state, (0, 0, 0))
+        W.unblock((1, 0, 0))
+        next_state, *_ = W.step((1, 0))
+        self.assertEqual(next_state, (1, 0, 0))
 
 
 class TestGridWorldRun(unittest.TestCase):

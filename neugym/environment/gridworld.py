@@ -312,6 +312,9 @@ class GridWorld:
                 self._area_alias.pop(name)
             raise
 
+        # Initial block attribute.
+        nx.set_node_attributes(self._world, False, 'blocked')
+
     def remove_area(self, area):
         """Remove an area from the world.
 
@@ -644,9 +647,8 @@ class GridWorld:
             Coordinate of the state whose object attribute will be updated.
 
         attr : keyword arguments \
-               {'reward': int or float, 'prob': int or float, 'punish': int or float} \
-               (optional, default: no attributes)
-            Attribute and new value to reset. If not provided, no attribute will be reset.
+               {'reward': int or float, 'prob': int or float, 'punish': int or float}
+            Attribute and new value to reset.
 
         Examples
         --------
@@ -704,6 +706,59 @@ class GridWorld:
 
         msg = "No object found at {}".format(coord)
         raise ValueError(msg)
+
+    def block(self, coord):
+        """Block one state.
+
+        When the agent tries to enter a blocked state,
+        it will be forced to stay in the current state,
+        i.e. no movements.
+
+        Parameters
+        ----------
+        coord : tuple of ints
+            Coordinate of the state to block.
+
+        Examples
+        -------
+        >>> W = GridWorld()
+        >>> W.add_area((1, 1))
+        >>> W.block((1, 0, 0))
+        """
+
+        if coord not in self._world.nodes:
+            msg = "Coordinate {} out of world".format(coord)
+            raise ValueError(msg)
+
+        if self._agent is not None:
+            agent_state = self.get_agent_state()
+            if coord == agent_state:
+                msg = "Unable to block state '{}', where the agent is currently in".format(coord)
+                raise RuntimeError(msg)
+
+        nx.set_node_attributes(self._world, {coord: True}, 'blocked')
+
+    def unblock(self, coord):
+        """Unblock one state.
+
+        Parameters
+        ----------
+        coord : tuple of ints
+            Coordinate of the state to block.
+
+        Examples
+        -------
+        >>> W = GridWorld()
+        >>> W.add_area((1, 1))
+        >>> W.block((1, 0, 0))
+        >>> W.unblock((1, 0, 0))
+        """
+
+        if coord in self._world.nodes:
+            nx.set_node_attributes(self._world, {coord: False}, 'blocked')
+        else:
+            msg = "Coordinate {} out of world".format(coord)
+            raise ValueError(msg)
 
     def set_altitude(self, area, altitude_mat):
         """Set the altitude of each state for one area.
@@ -971,7 +1026,7 @@ class GridWorld:
             provided, the agent will be initialized at ``(0, 0, 0)``
             by default.
 
-        overwrite : bool (optional, default: False)
+        overwrite : bool (default: False)
             Whether to overwrite the existing agent.
 
         Examples
@@ -988,6 +1043,10 @@ class GridWorld:
             msg = "Initial state coordinate {} out of world".format(init_coord)
             raise ValueError(msg)
 
+        if nx.get_node_attributes(self._world, 'blocked')[init_coord]:
+            msg = "Unable to initialize an agent at a blocked state '{}'".format(init_coord)
+            raise RuntimeError(msg)
+
         if self._agent is None or overwrite:
             self._agent = _Agent(init_coord)
         else:
@@ -999,7 +1058,7 @@ class GridWorld:
 
         Parameters
         ----------
-        when : str {"current", "init"} (optional, default: "current")
+        when : str {"current", "init"} (default: "current")
             Choose to get the initial ("init") or current ("current") state of the agent.
 
         Returns
@@ -1196,11 +1255,11 @@ class GridWorld:
         reward = 0
         current_state = self._agent.current_state
         next_state = (current_state[0], current_state[1] + dx, current_state[2] + dy)
-        if not self._world.has_node(next_state):
-            if next_state in self._path_alias.keys():
-                next_state = self._path_alias[next_state]
-            else:
-                next_state = current_state
+        if (not self._world.has_node(next_state)) and (next_state in self._path_alias.keys()):
+            next_state = self._path_alias[next_state]
+
+        if nx.get_node_attributes(self._world, 'blocked')[next_state]:
+            next_state = current_state
 
         altitude = nx.get_node_attributes(self._world, 'altitude')
         reward += altitude[current_state] - altitude[next_state]
@@ -1224,7 +1283,7 @@ class GridWorld:
 
         Parameters
         ----------
-        overwrite : bool (optional, default: False)
+        overwrite : bool (default: False)
             Whether to overwrite existing checkpoint.
 
         Examples
