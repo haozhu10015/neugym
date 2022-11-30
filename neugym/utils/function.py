@@ -82,8 +82,11 @@ def show_area_connection(env, layout='spring'):
     --------
     >>> W = GridWorld()
     >>> W.add_area((1, 1))
-    >>> W.add_area((1, 1), access_from=(1, 0, 0), register_action=(0, -1))
-    >>> W.add_area((1, 1), access_from=(2, 0, 0), register_action=(-1, 0))
+    >>> W.add_path((0, 0, 0), (1, 0, 0))
+    >>> W.add_area((1, 1))
+    >>> W.add_path((1, 0, 0), (2, 0, 0), register_action=(0, -1))
+    >>> W.add_area((1, 1))
+    >>> W.add_path((2, 0, 0), (3, 0, 0), register_action=(-1, 0))
     >>> W.add_path((3, 0, 0), (0, 0, 0))
     >>> ng.show_area_connection(W)
     """
@@ -144,6 +147,7 @@ def show_area(env, area, show_altitude=False, figsize=None):
     -------
     >>> W = GridWorld()
     >>> W.add_area((3, 5), name='slope')
+    >>> W.add_path((0, 0, 0), (1, 0, 0))
     >>> W.set_altitude(1, np.random.randn(3, 5))
     >>> W.block((1, 2, 4))
     >>> W.add_object((1, 2, 4), 0.5, 1)
