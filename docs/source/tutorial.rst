@@ -46,11 +46,11 @@ Areas
 -----
 
 Areas in the gridworld are represented by a 2D grid network where each state connects
-to its nearest 4 other states. Different areas are connected by inter-area paths from
-the area margin.
+to its nearest 4 other states.
 
-Add one area of shape ``(2, 2)``.
+Add two areas of shape ``(2, 2)``.
 
+    >>> W.add_area((2, 2))
     >>> W.add_area((2, 2))
     >>> print(W)
     GridWorld:
@@ -59,25 +59,17 @@ Add one area of shape ``(2, 2)``.
     areas:
         [0][origin] Area(shape=(1, 1))
         [1][] Area(shape=(2, 2))
-    inter-area connections:
-        (0, 0, 0) + (1, 0) -> (1, 0, 0)
+        [2][] Area(shape=(2, 2))
+    inter-area connections: None
     objects: None
     actions: ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
     agent: None
     has_reset_state: False
     ==========
 
-By default, adding a new area like this will connect the ``(0, 0)`` state of the new area
-with the gridworld origin ``(0, 0, 0)``. One can also manually specify the start and end state.
+You can specifying an alias name for an area when adding it.
 
-    >>> W.add_area((2, 2), access_from=(0, 0, 0), access_to=(1, 1))
-
-It is even possible to further register a certain action for this path.
-And you can also set a alias name for an area when adding it.
-
-    >>> W.add_area((2, 2),
-    ...            access_from=(1, 0, 1), access_to=(1, 1),
-    ...            register_action=(-1, 0), name="ThirdArea")
+    >>> W.add_area((2, 2), name="ThirdArea")
     >>> print(W)
     GridWorld:
     ==========
@@ -87,17 +79,14 @@ And you can also set a alias name for an area when adding it.
         [1][] Area(shape=(2, 2))
         [2][] Area(shape=(2, 2))
         [3][ThirdArea] Area(shape=(2, 2))
-    inter-area connections:
-        (0, 0, 0) + (1, 0) -> (1, 0, 0)
-        (0, 0, 0) + (-1, 0) -> (2, 1, 1)
-        (1, 0, 1) + (-1, 0) -> (3, 1, 1)
+    inter-area connections: None
     objects: None
     actions: ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
     agent: None
     has_reset_state: False
     ==========
 
-If you want to set a alias name for an exist area, you can use
+If you want to set or modify alias name for an exist area, you can use
 ``W.set_area_name`` function.
 
     >>> W.set_area_name(1, "FirstArea")
@@ -111,38 +100,12 @@ If you want to set a alias name for an exist area, you can use
         [1][FirstArea] Area(shape=(2, 2))
         [2][SecondArea] Area(shape=(2, 2))
         [3][ThirdArea] Area(shape=(2, 2))
-    inter-area connections:
-        (0, 0, 0) + (1, 0) -> (1, 0, 0)
-        (0, 0, 0) + (-1, 0) -> (2, 1, 1)
-        (1, 0, 1) + (-1, 0) -> (3, 1, 1)
+    inter-area connections: None
     objects: None
     actions: ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
     agent: None
     has_reset_state: False
     ==========
-
-.. note::
-
-    - When specifying the end state, only its coordinate within the new area need to be
-      provided.
-    - Since gridworld only allow 5 actions: **STAY(0, 0)**, **UP(1, 0)**, **DOWN(-1, 0)**,
-      **RIGHT(0, 1)**, and **LEFT(0, -1)**, each state can connect with at most 4 other
-      states corresponding to these actions, i.e. the start and end state of the
-      inter-area path can only be chosen from the states at the area margin.
-    - The registered path should be reversible. E.g. when action **UP(1, 0)** will
-      transport the agent from state ``(0, 0, 0)`` to state ``(1, 0, 0)``, then action
-      **DOWN(-1, 0)** must be able to transport the agent from state ``(1, 0, 0)`` to
-      state ``(0, 0, 0)``. When adding a new area, both of these two paths will be generated.
-      This rule will need to be paid attention to when trying to add areas with default
-      arguments (i.e. ``W.add_area((x, y))`` with ``x > 1`` and ``y > 1``).
-      For the first and second area, the inter-area path will be generated from the world
-      origin ``(0, 0, 0)`` to the origin of each area and with action ``(1, 0)`` and
-      ``(0, 1)`` registered, respectively. Then you will not be able to use the same
-      expression to add a third area from the origin since all possible action is now
-      allocated. You will need to manually specify the ``access_to`` arguments under this case.
-    - If the action to register is not manually set, then the first allowed path will be
-      searched and set in the following order: **UP(1, 0)** -> **DOWN(-1, 0)** -> **RIGHT(0, 1)** ->
-      **LEFT(0, -1)**.
 
 At any time, you can get the number of areas (without the origin) of the world with:
 
@@ -183,10 +146,7 @@ state coordinate to place the object for the first parameter:
         [1][FirstArea] Area(shape=(2, 2))
         [2][SecondArea] Area(shape=(2, 2))
         [3][ThirdArea] Area(shape=(2, 2))
-    inter-area connections:
-        (0, 0, 0) + (1, 0) -> (1, 0, 0)
-        (0, 0, 0) + (-1, 0) -> (2, 1, 1)
-        (1, 0, 1) + (-1, 0) -> (3, 1, 1)
+    inter-area connections: None
     objects:
         [0] Object(reward=1, punish=0, prob=0.7, coord=(1, 1, 1))
         [1] Object(reward=1, punish=-1, prob=0.3, coord=(2, 0, 1))
@@ -198,20 +158,55 @@ state coordinate to place the object for the first parameter:
 Setting world details
 =====================
 
-More inter-area paths
----------------------
+Inter-area paths
+----------------
 
-When we add a new area to the world, only one inter-area path is generated
-to make sure the new area is accessible from the existing world.
-However there are still some situations where we want more paths between the
-areas. For this purpose, function ``W.add_path`` could help.
+When we add a new area to the world, it cannot be accessed from any of the
+other existing areas since no inter-area path has been registered.
+To make these dangling areas accessible, function ``W.add_path`` can help.
+
+    >>> W.add_path(coord_from=(0, 0, 0), coord_to=(1, 0, 0))
+    >>> W.add_path(coord_from=(0, 0, 0), coord_to=(2, 1, 1))
+    >>> W.add_path(coord_from=(1, 0, 1), coord_to=(3, 1, 1))
+
+You can also manually specify action to register for the inter-area path.
 
     >>> W.add_path(coord_from=(2, 0, 0), coord_to=(3, 1, 0),
     ...            register_action=(-1, 0))
+    >>> print(W)
+    GridWorld:
+    ==========
+    time: 0
+    areas:
+        [0][origin] Area(shape=(1, 1))
+        [1][FirstArea] Area(shape=(2, 2))
+        [2][SecondArea] Area(shape=(2, 2))
+        [3][ThirdArea] Area(shape=(2, 2))
+    inter-area connections:
+        (0, 0, 0) + (1, 0) -> (1, 0, 0)
+        (0, 0, 0) + (-1, 0) -> (2, 1, 1)
+        (1, 0, 1) + (-1, 0) -> (3, 1, 1)
+        (2, 0, 0) + (-1, 0) -> (3, 1, 0)
+    objects:
+        [0] Object(reward=1, punish=0, prob=0.7, coord=(1, 1, 1))
+        [1] Object(reward=1, punish=-1, prob=0.3, coord=(2, 0, 1))
+    actions: ((0, 0), (1, 0), (-1, 0), (0, 1), (0, -1))
+    agent: None
+    has_reset_state: False
+    ==========
 
     .. note::
-        - The same as what we have done when adding a new area, the ``register_action``
-          parameter is also optional.
+        - Since gridworld only allow 5 actions: **STAY(0, 0)**, **UP(1, 0)**, **DOWN(-1, 0)**,
+          **RIGHT(0, 1)**, and **LEFT(0, -1)**, each state can connect with at most 4 other
+          states corresponding to these actions, i.e. the start and end state of the
+          inter-area path can only be chosen from the states at the area margin.
+        - The registered path should be reversible. E.g. when action **UP(1, 0)** will
+          transport the agent from state ``(0, 0, 0)`` to state ``(1, 0, 0)``, then action
+          **DOWN(-1, 0)** must be able to transport the agent from state ``(1, 0, 0)`` to
+          state ``(0, 0, 0)``. When adding a new path, both two directions will be generated.
+        - If the action to register is not manually set, then the first allowed path will be
+          searched and set in the following order: **UP(1, 0)** -> **DOWN(-1, 0)** -> **RIGHT(0, 1)** ->
+          **LEFT(0, -1)**.
         - Adding a path within the same area is not allowed.
 
 State altitude
@@ -244,7 +239,7 @@ set the altitude for all states in an area at the same time.
         - If you call ``W.set_altitude`` multiple times for one area, the altitude
           of the states within will be overwritten.
 
-You can have a look on the altitude of all states in an area with:
+You can have a look at the altitude of all states in an area with:
 
     >>> W.get_area_altitude(area=1)
     array([[-0.96776909,  0.35446728],
@@ -261,7 +256,8 @@ you can use ``W.remove_area`` and ``W.remove_path`` respectively.
 
 For demonstration, we will first add a new area and an extra path.
 
-    >>> W.add_area((5, 5), access_from=(3, 1, 1))
+    >>> W.add_area((5, 5))
+    >>> W.add_path((3, 1, 1), (4, 0, 0))
     >>> print(W)
     GridWorld:
     ==========
@@ -291,9 +287,6 @@ To remove the new-added area:
     >>> W.remove_area(area=4)
 
 .. note::
-    - When removing one area will result in the separate of
-      the world, i.e. some states can no longer be reached, this operation
-      will be prohibited.
     - Objects within one area will also be removed when removing the area.
     - Everytime when an area is removed, all indexes for other states (including
       objects within them) and areas remained will be checked and renamed to
@@ -301,7 +294,8 @@ To remove the new-added area:
 
 Then we add the new area back again and generate a new path.
 
-    >>> W.add_area((5, 5), access_from=(3, 1, 1))
+    >>> W.add_area((5, 5))
+    >>> W.add_path((3, 1, 1), (4, 0, 0))
     >>> W.add_path(coord_from=(4, 4, 4), coord_to=(3, 1, 0))
 
 To remove the new generated path but keep the area:
@@ -311,8 +305,6 @@ To remove the new generated path but keep the area:
     False
 
 .. note::
-    - The same as removing an area from the world, it is not allowed to remove a
-      path which is necessary for the world connectivity.
     - When removing a path from ``coord_from`` to ``coord_to``, the reverse
       path from ``coord_to`` to ``coord_from`` will also be removed at the same time.
 
