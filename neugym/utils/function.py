@@ -232,6 +232,5 @@ def show_area(env, area, show_altitude=False, figsize=None):
             ax.scatter(y, x, s=500, color='r', alpha=0.5)
 
     ax.axis('off')
-    plt.axis('off')
     plt.tight_layout()
     plt.show()
