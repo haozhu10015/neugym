@@ -217,11 +217,11 @@ def show_area(env, area, show_altitude=False, figsize=None):
                 except KeyError:
                     continue
 
-                ax.plot((x, alias[1]), (y, alias[2]),
+                ax.plot((y, alias[2]), (x, alias[1]),
                         color='r', linewidth=3, linestyle=':')
                 ax.annotate("{}".format(
                     next_state),
-                    (alias[1], alias[2]),
+                    (alias[2], alias[1]),
                     horizontalalignment='center', verticalalignment='bottom')
 
     for obj in env._objects:

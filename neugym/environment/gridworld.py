@@ -435,7 +435,7 @@ class GridWorld:
 
         if len(free_actions) == 0:
             msg = "Unable to connect two areas from 'coord_from' {} to 'coord_to' {}, " \
-                  "all allowed actions allocated".format(coord_from, coord_to[1:])
+                  "all allowed actions allocated".format(coord_from, coord_to)
             raise ng.NeuGymConnectivityError(msg)
 
         if register_action is not None:
