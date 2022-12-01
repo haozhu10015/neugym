@@ -15,12 +15,15 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertEqual(W.get_area_altitude(0).all(), np.zeros((1, 1)).all())
         self.assertEqual(W.world.number_of_nodes(), 1)
         self.assertTrue((0, 0, 0) in W.world.nodes)
+        self.assertTrue(True not in nx.get_node_attributes(W.world, 'blocked').values())
 
         # Test manually set origin shape.
         W = GridWorld((3, 3))
         self.assertEqual(W.get_area_altitude(0).all(), np.zeros((3, 3)).all())
         self.assertEqual(W.world.number_of_nodes(), 9)
         self.assertEqual(W.world.number_of_edges(), 12)
+        self.assertEqual(9, len(nx.get_node_attributes(W.world, 'blocked')))
+        self.assertTrue(True not in nx.get_node_attributes(W.world, 'blocked').values())
 
     def test_add_area(self):
         # Test 'add_area' function.
@@ -28,42 +31,8 @@ class TestGridWorldFunction(unittest.TestCase):
         W = GridWorld()
         W.add_area((2, 2))
         self.assertEqual(W.num_area, 1)
-        self.assertTrue(((0, 0, 0), (1, 0, 0)) in W.world.edges)
-        self.assertEqual(W._path_alias.get((0, 1, 0)), (1, 0, 0))
-        self.assertEqual(W._path_alias.get((1, -1, 0)), (0, 0, 0))
         self.assertEqual(W.world.number_of_nodes(), 5)
-        self.assertEqual(W.world.number_of_edges(), 5)
         self.assertEqual(W.get_area_altitude(1).all(), np.zeros((2, 2)).all())
-
-        # Test manually specify inter-area connections.
-        with self.assertRaises(ValueError):
-            W.add_area((2, 3), access_from=(2, 1, 1), access_to=(1, 0), register_action=(0, 1))
-        with self.assertRaises(ng.NeuGymConnectivityError):
-            W.add_area((2, 3), access_from=(1, 1, 1), access_to=(1, 2))
-        self.assertEqual(W.num_area, 1)
-        self.assertEqual(list(W.world.nodes), [(0, 0, 0), (1, 0, 0), (1, 0, 1), (1, 1, 0), (1, 1, 1)])
-
-        W.add_area((2, 3), access_from=(1, 1, 1), access_to=(1, 0), register_action=(0, 1))
-        self.assertEqual(W.num_area, 2)
-        self.assertTrue(((1, 1, 1), (2, 1, 0)) in W.world.edges)
-        self.assertEqual(W._path_alias.get((1, 1, 2)), (2, 1, 0))
-        self.assertEqual(W._path_alias.get((2, 1, -1)), (1, 1, 1))
-        self.assertEqual(len(W._path_alias), 4)
-        with self.assertRaises(ValueError):
-            W.add_area((3, 3), access_from=(0, 0))
-        with self.assertRaises(ValueError):
-            W.add_area((3, 3), access_from=(99, 0, 0))
-
-        with self.assertRaises(ValueError):
-            W.add_area((3, 3), access_to=(0, 0, 0))
-        with self.assertRaises(ValueError):
-            W.add_area((3, 3), access_to=(3, 3))
-        with self.assertRaises(ng.NeuGymConnectivityError):
-            W.add_area((3, 3), access_to=(1, 1))
-        with self.assertRaises(ng.NeuGymConnectivityError):
-            W.add_area((3, 3), access_from=(2, 1, 2), access_to=(1, 0), register_action=(1, 0))
-        with self.assertRaises(ValueError):
-            W.add_area((3, 3), access_from=(2, 1, 2), access_to=(1, 0), register_action=(3, 3))
 
         # Test add area with name.
         W = GridWorld()
@@ -73,12 +42,21 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertEqual(W.num_area, 1)
         self.assertEqual(W.get_area_name(1), "Up")
 
+        # Test initial block.
+        W = GridWorld()
+        W.block((0, 0, 0))
+        W.add_area((2, 2), name="Up")
+        self.assertTrue(nx.get_node_attributes(W.world, 'blocked')[(0, 0, 0)])
+
     def test_remove_area(self):
         # Test 'remove_area' function.
         W = GridWorld()
         W.add_area((2, 2))
-        W.add_area((3, 3), access_from=(1, 1, 1))
+        W.add_path((0, 0, 0), (1, 0, 0))
+        W.add_area((3, 3))
+        W.add_path((1, 1, 1), (2, 0, 0))
         W.add_area((5, 5))
+        W.add_path((0, 0, 0), (3, 0, 0))
         W.add_object((1, 0, 0), 1, 0.5)
         W.add_object((2, 0, 0), 1, 0.6)
         W.add_object((3, 1, 1), 1, 0.7)
@@ -86,10 +64,6 @@ class TestGridWorldFunction(unittest.TestCase):
         self.assertTrue(((1, 1, 1), (2, 0, 0)) in W.world.edges)
         self.assertEqual(W._path_alias.get((1, 2, 1)), (2, 0, 0))
         self.assertTrue(((0, 0, 0), (3, 0, 0)) in W.world.edges)
-
-        # Test remove "bridge" area.
-        with self.assertRaises(ng.NeuGymConnectivityError):
-            W.remove_area(1)
 
         W.remove_area(2)
         self.assertEqual(W.num_area, 2)
@@ -104,7 +78,8 @@ class TestGridWorldFunction(unittest.TestCase):
         for obj in W._objects:
             self.assertTrue(obj.coord != (2, 0, 0))
 
-        W.add_area((5, 5), access_to=(4, 4))
+        W.add_area((5, 5))
+        W.add_path((0, 0, 0), (3, 4, 4))
         W.add_object((3, 1, 1), 1, 0.7)
         W.remove_area(1)
         W.remove_area(1)
@@ -127,8 +102,11 @@ class TestGridWorldFunction(unittest.TestCase):
         # Test remove with area name.
         W = GridWorld()
         W.add_area((2, 2), name="First")
+        W.add_path((0, 0, 0), (1, 0, 0))
         W.add_area((2, 2), name="Second")
-        W.add_area((2, 2), access_to=(1, 1), name="Third")
+        W.add_path((0, 0, 0), (2, 0, 0))
+        W.add_area((2, 2), name="Third")
+        W.add_path((0, 0, 0), (3, 1, 1))
         W.remove_area("Second")
         self.assertEqual(W.num_area, 2)
         self.assertEqual(W.get_area_name(2), "Third")
@@ -145,8 +123,11 @@ class TestGridWorldFunction(unittest.TestCase):
             W.add_path((0, 0, 0), (0, 0, 0))
 
         W.add_area((2, 2))
+        W.add_path((0, 0, 0), (1, 0, 0))
         W.add_area((3, 3))
-        W.add_area((2, 2), access_to=(1, 1))
+        W.add_path((0, 0, 0), (2, 0, 0))
+        W.add_area((2, 2))
+        W.add_path((0, 0, 0), (3, 1, 1))
         with self.assertRaises(ValueError):
             W.add_path((1, 1, 1), (2, 0))
         with self.assertRaises(ng.NeuGymConnectivityError):
@@ -167,9 +148,9 @@ class TestGridWorldFunction(unittest.TestCase):
         # Test 'remove_path' function.
         W = GridWorld()
         W.add_area((2, 4))
-        with self.assertRaises(ng.NeuGymConnectivityError):
-            W.remove_path((0, 0, 0), (1, 0, 0))
+        W.add_path((0, 0, 0), (1, 0, 0))
         W.add_area((3, 5))
+        W.add_path((0, 0, 0), (2, 0, 0))
         W.add_path((1, 1, 0), (2, 0, 4))
         with self.assertRaises(ng.NeuGymOverwriteError):
             W.add_path((1, 1, 0), (2, 0, 4))
@@ -190,7 +171,9 @@ class TestGridWorldFunction(unittest.TestCase):
         # Test 'add_object' function.
         W = GridWorld()
         W.add_area((2, 2))
+        W.add_path((0, 0, 0), (1, 0, 0))
         W.add_area((4, 3))
+        W.add_path((0, 0, 0), (2, 0, 0))
 
         W.add_object((1, 1, 1), 1, 0.3)
         W.add_object((2, 2, 1), 1, 0.7, -1)
@@ -211,8 +194,11 @@ class TestGridWorldFunction(unittest.TestCase):
         # Test 'remove_object' function.
         W = GridWorld()
         W.add_area((4, 3))
+        W.add_path((0, 0, 0), (1, 0, 0))
         W.add_area((4, 3))
-        W.add_area((4, 3), access_to=(3, 1))
+        W.add_path((0, 0, 0), (2, 0, 0))
+        W.add_area((4, 3))
+        W.add_path((0, 0, 0), (3, 3, 1))
         W.add_object((1, 2, 1), 1, 0.2)
         W.add_object((2, 2, 1), 1, 0.8)
         W.add_object((3, 2, 1), 1, 0.9)
@@ -230,7 +216,9 @@ class TestGridWorldFunction(unittest.TestCase):
         # Test 'update_object' function.
         W = GridWorld()
         W.add_area((4, 3))
+        W.add_path((0, 0, 0), (1, 0, 0))
         W.add_area((4, 3))
+        W.add_path((0, 0, 0), (2, 0, 0))
         W.add_object((1, 2, 1), 1, 0.3)
         W.add_object((2, 2, 1), 1, 0.7)
 
@@ -251,6 +239,7 @@ class TestGridWorldFunction(unittest.TestCase):
         # Test 'get_object_attribute' function.
         W = GridWorld()
         W.add_area((2, 2))
+        W.add_path((0, 0, 0), (1, 0, 0))
         W.add_object((1, 0, 1), 10, 0.5)
         self.assertEqual(W.get_object_attribute((1, 0, 1), "reward"), 10)
         self.assertEqual(W.get_object_attribute((1, 0, 1), "prob"), 0.5)
@@ -263,6 +252,7 @@ class TestGridWorldFunction(unittest.TestCase):
         # Test 'set_altitude' function.
         W = GridWorld()
         W.add_area((3, 4))
+        W.add_path((0, 0, 0), (1, 0, 0))
         self.assertEqual(W.get_area_altitude(1).all(), np.zeros((3, 4)).all())
         altitude_mat = np.random.randn(3, 4)
         W.set_altitude(1, altitude_mat=altitude_mat)
@@ -287,7 +277,9 @@ class TestGridWorldFunction(unittest.TestCase):
         # Test 'get_area_shape' function.
         W = GridWorld()
         W.add_area((4, 10))
+        W.add_path((0, 0, 0), (1, 0, 0))
         W.add_area((4, 3), name="Right")
+        W.add_path((0, 0, 0), (2, 0, 0))
 
         self.assertEqual(W.get_area_shape(0), (1, 1))
         self.assertEqual(W.get_area_shape(2), (4, 3))
@@ -301,11 +293,13 @@ class TestGridWorldFunction(unittest.TestCase):
         W = GridWorld()
         altitude_mat = np.random.randn(5, 8)
         W.add_area((5, 8))
+        W.add_path((0, 0, 0), (1, 0, 0))
         W.set_altitude(1, altitude_mat)
         self.assertEqual(W.get_area_altitude(1).all(), altitude_mat.all())
         with self.assertRaises(ValueError):
             W.get_area_altitude(2)
         W.add_area((5, 8), name="Right")
+        W.add_path((0, 0, 0), (2, 0, 0))
         W.set_altitude("Right", altitude_mat)
         self.assertEqual(W.get_area_altitude("Right").all(), altitude_mat.all())
 
@@ -322,6 +316,7 @@ class TestGridWorldFunction(unittest.TestCase):
         # Test initialize agent at other positions.
         W = GridWorld()
         W.add_area((2, 2))
+        W.add_path((0, 0, 0), (1, 0, 0))
         W.init_agent((1, 1, 0))
         self.assertEqual(W.get_agent_state("init"), (1, 1, 0))
         W.init_agent((1, 1, 1), overwrite=True)
@@ -332,6 +327,7 @@ class TestGridWorldFunction(unittest.TestCase):
         # Test 'get_agent_state' function.
         W = GridWorld()
         W.add_area((1, 2))
+        W.add_path((0, 0, 0), (1, 0, 0))
         W.add_object((1, 0, 1), 10, 1)
         W.init_agent()
         self.assertEqual(W.get_agent_state(), (0, 0, 0))
@@ -345,6 +341,7 @@ class TestGridWorldFunction(unittest.TestCase):
         # Test 'step' function.
         W = GridWorld()
         W.add_area((1, 2))
+        W.add_path((0, 0, 0), (1, 0, 0))
         W.set_altitude(1, altitude_mat=np.array([[0.1, 0.2]]))
         W.add_object((1, 0, 1), 10, 1)
         W.init_agent()
@@ -383,6 +380,7 @@ class TestGridWorldFunction(unittest.TestCase):
         # Test 'set_reset_state' function.
         W = GridWorld()
         W.add_area((1, 2))
+        W.add_path((0, 0, 0), (1, 0, 0))
         W.set_altitude(1, altitude_mat=np.array([[0.1, 0.2]]))
         W.add_object((1, 0, 1), 10, 1)
         W.init_agent((1, 0, 0))
@@ -397,6 +395,7 @@ class TestGridWorldFunction(unittest.TestCase):
     def test_reset(self):
         W = GridWorld()
         W.add_area((1, 3))
+        W.add_path((0, 0, 0), (1, 0, 0))
         W.set_altitude(1, altitude_mat=np.array([[0.1, 0.2, 0.3]]))
         W.add_object((1, 0, 2), 10, 1)
         W.init_agent((1, 0, 0))
@@ -421,9 +420,11 @@ class TestGridWorldFunction(unittest.TestCase):
         # Tests on area alias name operations.
         W = GridWorld()
         W.add_area((2, 2), name="Up")
+        W.add_path((0, 0, 0), (1, 0, 0))
         W.add_area((2, 2), name="Right")
+        W.add_path((0, 0, 0), (2, 0, 0))
         with self.assertRaises(RuntimeError):
-            W.add_area((2, 2), access_to=(1, 1), name="Right")
+            W.add_area((2, 2), name="Right")
         # Test get area name.
         self.assertEqual(W.get_area_name(1), "Up")
         self.assertEqual(W.get_area_name(2), "Right")
@@ -455,6 +456,7 @@ class TestGridWorldFunction(unittest.TestCase):
         # Test block and unblock state.
         W = GridWorld()
         W.add_area((2, 2))
+        W.add_path((0, 0, 0), (1, 0, 0))
         with self.assertRaises(ValueError):
             W.block((3, 3, 3))
         with self.assertRaises(ValueError):
@@ -468,6 +470,7 @@ class TestGridWorldFunction(unittest.TestCase):
         # Test agent behavior.
         W = GridWorld()
         W.add_area((1, 1))
+        W.add_path((0, 0, 0), (1, 0, 0))
         W.block((0, 0, 0))
         with self.assertRaises(RuntimeError):
             W.init_agent()

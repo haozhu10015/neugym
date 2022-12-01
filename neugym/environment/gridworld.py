@@ -88,12 +88,6 @@ class GridWorld:
 
     >>> W.add_area((2, 2))
 
-    Manually specify start and end state of inter-area path and action to register.
-
-    >>> W.add_area((2, 2),
-    ...            access_from=(0, 0, 0), access_to=(1, 1),
-    ...            register_action=(-1, 0))
-
     Remove areas.
 
     >>> W.remove_area(1)
@@ -105,10 +99,11 @@ class GridWorld:
 
     **Paths:**
 
-    Add additional inter-area paths.
+    Add inter-area paths.
 
     >>> W = GridWorld()
     >>> W.add_area((2, 2))
+    >>> W.add_path((0, 0, 0), (1, 0, 0))
     >>> W.add_area((2, 2))
     >>> W.add_path((1, 1, 1), (2, 1, 0), register_action=(0, 1))
 
@@ -136,11 +131,14 @@ class GridWorld:
 
     **Agent:**
 
+    >>> W = GridWorld()
     >>> W.init_agent()
 
     One can also manually set the agent initial state.
 
+    >>> W = GridWorld()
     >>> W.add_area((2, 2))
+    >>> W.add_path((0, 0, 0), (1, 0, 0))
     >>> W.init_agent(init_coord=(1, 1, 1))
 
     When the agent is initialized, the agent can move in the
@@ -202,6 +200,7 @@ class GridWorld:
         origin_altitude_mat = np.zeros(origin_shape)
         self.set_area_name(0, 'origin')
         self.set_altitude(0, origin_altitude_mat)
+        nx.set_node_attributes(self._world, False, 'blocked')
 
         # Agent.
         self._agent = None
@@ -218,17 +217,14 @@ class GridWorld:
             "agent": None
         }
 
-    def add_area(self, shape, name=None,
-                 access_from=None, access_to=None,
-                 register_action=None):
+    def add_area(self, shape, name=None):
         """Add a new area to the world.
 
         .. note::
-            When an inter-area path from ``access_from`` to ``access_to`` with
-            action ``register_action`` is built, a reverse path is also build at
-            the same time, i.e. the agent can also move from ``access_to`` to
-            ``access_from`` with the reverse action of ``register_action`` (e.g.
-            the reverse action of **UP(1, 0)** is **DOWN(-1, 0)**).
+            Using this function people can add a new dangling area to the world,
+            i.e. for now, it cannot be accessed from any of the other areas.
+            To make this new area accessible, use ``GridWorld.add_path()`` function
+            to build inter-area bridges.
 
         Parameters
         ----------
@@ -238,54 +234,16 @@ class GridWorld:
         name : str (optional, default: None)
             Alias name of the area to be added.
 
-        access_from : tuple of ints (optional, default: None)
-            Coordinate of one state in the world that the new area will
-            connect to, i.e. the start state of the inter-area path.
-            If not provided, it will be set to ``(0, 0, 0)`` by default.
-
-        access_to : tuple of ints (optional, default: None)
-            Coordinate of one state in the new area, i.e. the end state
-            of the inter-area path. Tuple of length 2 is required and the
-            area index will be automatically added. If not provided, it will be set
-            to ``(0, 0)`` by default.
-
-        register_action : tuple of ints (optional, default: None)
-            Register an action to transport the agent from ``access_from`` to
-            ``access_to``.
-
         Examples
         --------
         >>> W = GridWorld()
         >>> W.add_area((2, 3))
         >>> W.add_area((2, 2), name="Right")
-        >>> W.add_area((3, 3), access_from=(1, 1, 2))
-        >>> W.add_area((4, 4), access_from=(0, 0, 0), access_to=(3, 3))
-        >>> W.add_area((2, 2),
-        ...            access_from=(4, 0, 0), access_to=(1, 1),
-        ...            register_action=(0, -1))
         """
-        if access_from is None:
-            access_from = (0, 0, 0)
-        if access_to is None:
-            access_to = (0, 0)
-
-        if not self._world.has_node(access_from):
-            msg = "'access_from' coordinate " \
-                  "{} out of world".format(access_from)
-            raise ValueError(msg)
-
-        if len(access_to) != 2:
-            msg = "Tuple of length 2 expected for " \
-                  "argument 'access_to', got {}".format(len(access_to))
-            raise ValueError(msg)
-        access_to = tuple([self._num_area + 1] + list(access_to))
 
         if name in self._area_alias.keys():
             msg = "Alias name already exists, try another name"
             raise RuntimeError(msg)
-
-        # Create checkpoint for rollback.
-        world_backup = copy.deepcopy(self._world)
 
         # Create new area.
         m, n = shape
@@ -294,26 +252,16 @@ class GridWorld:
         for coord in new_area.nodes:
             mapping[coord] = tuple([self._num_area + 1] + list(coord))
         new_area = nx.relabel_nodes(new_area, mapping)
+        nx.set_node_attributes(new_area, False, 'blocked')
 
         self._world.update(new_area)
         self._num_area += 1
         if name is not None:
             self._area_alias[name] = self._num_area
 
-        # Add inter-area connections and altitude.
+        # Add area altitude.
         altitude_mat = np.zeros(shape)
-        try:
-            self.add_path(access_from, access_to, register_action)
-            self.set_altitude(self._num_area, altitude_mat)
-        except Exception:
-            self._world = world_backup
-            self._num_area -= 1
-            if name is not None:
-                self._area_alias.pop(name)
-            raise
-
-        # Initial block attribute.
-        nx.set_node_attributes(self._world, False, 'blocked')
+        self.set_altitude(self._num_area, altitude_mat)
 
     def remove_area(self, area):
         """Remove an area from the world.
@@ -323,9 +271,9 @@ class GridWorld:
         area.)
 
         .. note::
+            - All inter-area path and objects related to the to be removed area
+              will be automatically removed.
             - Origin of the world is not allowed to be removed.
-            - Removing action that will make the world no longer connected
-              will also be prohibited.
 
         Parameters
         ----------
@@ -360,11 +308,6 @@ class GridWorld:
             elif node[0] > area_idx:
                 new_label = tuple([node[0] - 1] + list(node[1:]))
                 new_world = nx.relabel_nodes(new_world, {node: new_label})
-
-        if not nx.is_connected(new_world):
-            msg = "Not allowed to remove area {}, " \
-                  "world would be no longer connected".format(area_idx)
-            raise ng.NeuGymConnectivityError(msg)
 
         self._world = new_world
         self._num_area -= 1
@@ -434,12 +377,16 @@ class GridWorld:
 
         register_action : tuple of ints (optional, default: None)
             Register an action to transport the agent from ``coord_from`` to
-            ``coord_to``
+            ``coord_to``. If None, possible action to register will
+            be searched in the order of
+            [**UP(1, 0)**, **DOWN(-1, 0)**, **RIGHT(0, 1)**, **LEFT(0, -1)**],
+            and the first possible action will be registered.
 
         Examples
         --------
         >>> W = GridWorld()
         >>> W.add_area((2, 2))
+        >>> W.add_path((0, 0, 0), (1, 0, 0))
         >>> W.add_area((3, 3))
         >>> W.add_path((1, 1, 1), (2, 1, 0), register_action=(0, 1))
         """
@@ -488,7 +435,7 @@ class GridWorld:
 
         if len(free_actions) == 0:
             msg = "Unable to connect two areas from 'coord_from' {} to 'coord_to' {}, " \
-                  "all allowed actions allocated".format(coord_from, coord_to[1:])
+                  "all allowed actions allocated".format(coord_from, coord_to)
             raise ng.NeuGymConnectivityError(msg)
 
         if register_action is not None:
@@ -516,10 +463,6 @@ class GridWorld:
     def remove_path(self, coord_from, coord_to):
         """Remove one inter-area connection from the world.
 
-        .. note::
-            Removing action that will cause the world no longer connected
-            will be prohibited.
-
         Parameters
         ----------
         coord_from : tuple of ints
@@ -532,18 +475,13 @@ class GridWorld:
         --------
         >>> W = GridWorld()
         >>> W.add_area((2, 2))
-        >>> W.add_area((3, 3))
-        >>> W.add_path((1, 1, 1), (2, 1, 0), register_action=(0, 1))
-        >>> W.remove_path((1, 1, 1), (2, 1, 0))
+        >>> W.add_path((0, 0, 0), (1, 0, 0), register_action=(0, 1))
+        >>> W.remove_path((0, 0, 0), (1, 0, 0))
         """
         if coord_from[0] == coord_to[0]:
-            msg = "Not allowed to remove path within an area"
+            msg = "Not allowed to remove path within an area, " \
+                  "try using `GridWorld.block()` instead"
             raise ng.NeuGymPermissionError(msg)
-
-        if (coord_from, coord_to) in list(nx.bridges(self._world)):
-            msg = "Not allowed to remove path ({}, {}), " \
-                  "world would be no longer connected".format(coord_from, coord_to)
-            raise ng.NeuGymConnectivityError(msg)
 
         if len(coord_from) != 3 or len(coord_to) != 3:
             msg = "Tuple of length 3 expected for position coordinate"
@@ -1070,6 +1008,7 @@ class GridWorld:
         --------
         >>> W = GridWorld()
         >>> W.add_area((2, 2))
+        >>> W.add_path((0, 0, 0), (1, 0, 0))
         >>> W.init_agent()
         >>> W.step((1, 0))
         ((1, 0, 0), 0.0, False)
@@ -1139,6 +1078,7 @@ class GridWorld:
         --------
         >>> W = GridWorld()
         >>> W.add_area((2, 3))
+        >>> W.add_path((0, 0, 0), (1, 0, 0))
         >>> W.init_agent()
         >>> W.step((1, 0))
         >>> W.step((0, 0))
@@ -1241,6 +1181,7 @@ class GridWorld:
         --------
         >>> W = GridWorld()
         >>> W.add_area((2, 3))
+        >>> W.add_path((0, 0, 0), (1, 0, 0))
         >>> W.init_agent()
         >>> W.step((1, 0))
         ((1, 0, 0), 0.0, False)
@@ -1255,8 +1196,11 @@ class GridWorld:
         reward = 0
         current_state = self._agent.current_state
         next_state = (current_state[0], current_state[1] + dx, current_state[2] + dy)
-        if (not self._world.has_node(next_state)) and (next_state in self._path_alias.keys()):
-            next_state = self._path_alias[next_state]
+        if not self._world.has_node(next_state):
+            if next_state in self._path_alias.keys():
+                next_state = self._path_alias[next_state]
+            else:
+                next_state = current_state
 
         if nx.get_node_attributes(self._world, 'blocked')[next_state]:
             next_state = current_state
@@ -1310,6 +1254,7 @@ class GridWorld:
         --------
         >>> W = GridWorld()
         >>> W.add_area((3, 3))
+        >>> W.add_path((0, 0, 0), (1, 0, 0))
         >>> W.add_object((1, 2, 1), reward=1, prob=0.7)
         >>> W.set_reset_checkpoint()
         >>> W.init_agent()
