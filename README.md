@@ -24,7 +24,7 @@ If you find this code useful for your research, please cite:
 
     @misc{HaoZhu10015_2022_NeuGym,
       author = {Hao Zhu},
-      title = {NeuGym},
+      title = {NeuGym: A Python package for reinforcement learning environment of animal behavior modeling.},
       year = {2022},
       publisher = {GitHub},
       journal = {GitHub repository},
