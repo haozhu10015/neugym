@@ -90,6 +90,9 @@ def show_area_connection(env, layout='spring'):
     >>> W.add_path((3, 0, 0), (0, 0, 0))
     >>> ng.show_area_connection(W)
     """
+    import matplotlib.pyplot as plt
+    fig, ax = plt.subplots(1, 1)
+
     g = nx.Graph()
 
     labels = {}
@@ -121,7 +124,11 @@ def show_area_connection(env, layout='spring'):
               "['circular', 'spring', 'shell', 'spectral']".format(layout)
         raise ValueError(msg)
 
-    nx.draw_networkx(g, pos=pos, labels=labels)
+    nx.draw_networkx(g, pos=pos, labels=labels, ax=ax)
+
+    ax.axis('off')
+    plt.tight_layout()
+    plt.show()
 
 
 def show_area(env, area, show_altitude=False, figsize=None):
