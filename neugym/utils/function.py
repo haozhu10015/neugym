@@ -7,7 +7,8 @@ __all__ = [
     "save_env",
     "load_env",
     "show_area_connection",
-    "show_area"
+    "show_area",
+    "show_binary_area"
 ]
 
 
@@ -239,5 +240,52 @@ def show_area(env, area, show_altitude=False, figsize=None):
             ax.scatter(y, x, s=500, color='r', alpha=0.5)
 
     ax.axis('off')
+    plt.tight_layout()
+    plt.show()
+
+def show_binary_area(env, area, block_unreachable=False):
+    """
+    shows Area as contour image, shows blocked and available paths
+    also indicates unreachable points
+    """
+
+    import matplotlib.pyplot as plt
+    from skimage.morphology import flood_fill
+
+    if type(area) == str:
+        area_idx = env.get_area_index(area)
+    elif type(area) == int:
+        area_idx = area
+    else:
+        msg = "int for area index or str for area name " \
+              "expected, got '{}'".format(type(area))
+        raise TypeError(msg)
+
+    if area_idx > env.num_area or area_idx < 0:
+        msg = "Area {} not found".format(area_idx)
+        raise ValueError(msg)
+    shape = env.get_area_shape(area_idx)
+    area_mat = np.ones(shape)
+
+    for coords in env.world.nodes.keys():
+        if coords[0] != area_idx:
+            continue
+        node_dict = env.world.nodes[coords]
+        if node_dict['blocked']:
+            area_mat[coords[1], coords[2]] = 0
+
+    entry = env.get_entry_points(area_idx)
+    reachable = flood_fill(area_mat, (entry[0][1], entry[0][2]), 0.5, connectivity=1)
+    reachable[reachable == 1] = 0.1  # mark unreachable areas as grey
+
+    if block_unreachable:
+        for tobe_blocked in np.argwhere(reachable == 0.1):
+            env.block((area_idx, tobe_blocked[0], tobe_blocked[1]))
+            area_mat[tobe_blocked[1], tobe_blocked[2]] = 0
+
+    fig, ax = plt.subplots(1, 1)
+    ax.imshow(reachable, cmap='gray')
+
+    # ax.axis('off')
     plt.tight_layout()
     plt.show()
