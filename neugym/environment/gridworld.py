@@ -14,6 +14,8 @@ __all__ = [
     "GridWorld"
 ]
 
+from .. import NeuGymConnectivityError
+
 
 class GridWorld:
     r"""Base class for gridworld environment.
@@ -1315,3 +1317,88 @@ class GridWorld:
         msg += "".join(["=" for _ in range(10)])
 
         return msg
+
+    def get_entry_points(self, area) -> list:
+        """Return Entry Point to an area
+        Examples
+        --------
+        >>> W = GridWorld()
+        >>> W.add_area((3, 3))
+        >>> W.add_path((0, 0, 0), (1, 0, 0))
+        >>> W.get_entry_points(1)
+        (1, 0, 0)
+        """
+        entry_points = []
+        if type(area) == str:
+            area_idx = self.get_area_index(area)
+        elif type(area) == int:
+            area_idx = area
+        else:
+            msg = "int for area index or str for area name " \
+                  "expected, got '{}'".format(type(area))
+            raise TypeError(msg)
+
+        if area_idx > self.num_area or area_idx < 0:
+            msg = "Area {} not found".format(area_idx)
+            raise ValueError(msg)
+
+        for u, v in self.world.edges():
+            if u[0] == v[0]:
+                continue
+            else:
+                for a in self.actions:
+                    dx, dy = a
+                    alias = tuple([u[0]] + [u[1] + dx] + [u[2] + dy])
+                    try:
+                        if self._path_alias[alias] == v:
+                            if v[0] == area_idx:
+                                entry_points.append(v)
+                    except KeyError:
+                        continue
+        if len(entry_points) == 0:
+            raise NeuGymConnectivityError('This area doesnt seem to have an Entry.')
+        else:
+            return entry_points
+
+    def add_area_from_array(self, array, area_name=None, entry_from=None, action=None):
+        """Adds area from an array
+        0 - blocked points
+        1 - available points
+        42 - point of entry to origin <- needs mofication to not always lead to 0,0,0
+        Examples
+        --------
+        >>> W = GridWorld()
+        >>> W.add_area_from_array(np.eye(10), area_name='eye')
+        >>> area=np.eye(8)
+        >>> area[7,7]=42 # put entry point here
+        >>> W.add_area_from_array(area)
+        """
+        MAGIC_CODE_ENTRY = 42
+
+        if entry_from is None:
+            entry_from = (0, 0, 0)
+        assert len(entry_from) == 3, 'wrong shape of the entry point needs to be (x,x,x)'
+        assert len(array.shape) == 2, 'wrong shape of the array, needs to be 2 dim'
+        # TODO if 3D volume, use 2.dim as altitude
+        if area_name is None:
+            area_name = f'Area {self._num_area + 1}'
+        self.add_area(array.shape, name=area_name)
+
+        # Define entrypoint and make connection
+        pot_point = np.argwhere(array == MAGIC_CODE_ENTRY)
+        for point in pot_point:
+            start_point = (self._num_area, point[0], point[1])
+            if np.all([start_point[1], start_point[2], start_point[1] + 1 - array.shape[0],
+                       start_point[2] + 1 - array.shape[1]]):
+                raise NeuGymConnectivityError('Start point not on the border')
+                # needs to be on the border to have available action
+            else:
+                break  # only first starting point
+        else:
+            start_point = (self._num_area, 0, 0)
+            # shouldnt be blocked ?
+        self.add_path(entry_from, start_point, register_action=action)
+
+        # Define blocked areas
+        for blocked_point in np.argwhere(array == 0):
+            self.block((self._num_area, blocked_point[0], blocked_point[1]))
